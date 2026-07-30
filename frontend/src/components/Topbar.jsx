@@ -1,4 +1,6 @@
-// Üst bar: karşılama + tarih + kullanıcı avatarı
+import ThemeToggle from './ThemeToggle'
+
+// Üst bar: karşılama + tarih + tema düğmesi + kullanıcı avatarı
 export default function Topbar() {
   const today = new Date().toLocaleDateString('tr-TR', {
     weekday: 'long',
@@ -12,8 +14,11 @@ export default function Topbar() {
         <p className="text-xs text-bark-400">Hoş geldin 👋</p>
         <p className="text-sm font-medium text-bark-800">{today}</p>
       </div>
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-bark-600 text-xs font-semibold text-cream-50">
-        OK
+      <div className="flex items-center gap-4">
+        <ThemeToggle />
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-bark-600 text-xs font-semibold text-cream-50">
+          OK
+        </div>
       </div>
     </header>
   )

@@ -55,7 +55,8 @@ export default function InvoiceFormModal({ open, onClose, onCreated }) {
 
   return (
     // Arka plan karartma — tıklanınca kapanır
-    <div className="fixed inset-0 z-50 flex justify-end bg-bark-900/30" onClick={onClose}>
+    // (bark-900 KULLANMIYORUZ: koyu temada o renk krem olur, karartma beyazlaşırdı)
+    <div className="fixed inset-0 z-50 flex justify-end bg-overlay/50" onClick={onClose}>
       {/* Panel — içine tıklama kapatmasın */}
       <div
         className="h-full w-full max-w-md overflow-y-auto bg-cream-50 p-6 shadow-xl"

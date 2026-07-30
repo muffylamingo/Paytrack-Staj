@@ -6,9 +6,34 @@ import {
 import { AlertTriangle, CalendarClock, Wallet, TrendingUp, TrendingDown } from 'lucide-react'
 import { getStats } from '../api/stats'
 import { formatCurrency } from '../lib/format'
+import { useTheme } from '../context/ThemeContext'
 
-// Organic palet — grafik dilim renkleri
-const PIE_COLORS = ['#C2703F', '#7A8B5A', '#6B5D4B', '#D08B5E', '#A6402C', '#9A8B78']
+/*
+  Grafik renkleri neden burada (CSS'te değil)?
+  Recharts renkleri JS prop'u olarak alıyor (fill="#C2703F"), CSS sınıfı değil.
+  Bu yüzden iki paleti burada tanımlayıp temaya göre seçiyoruz.
+  Koyu temada renkler biraz AÇILDI (koyu zeminde soluk renkler kaybolur).
+*/
+const CHART = {
+  light: {
+    pie:  ['#C2703F', '#7A8B5A', '#6B5D4B', '#D08B5E', '#A6402C', '#9A8B78'],
+    line: '#C2703F',
+    grid: '#ECE3D2',
+    axis: '#9A8B78',
+    tooltip: { bg: '#FBF8F1', border: '#DFD3BC', text: '#2C2418' },
+    // 3 KPI kartının gradyanları [başlangıç, bitiş]
+    kpi: [['#C96F4A', '#A03A28'], ['#D8A75A', '#BE7B33'], ['#869A5F', '#566B3A']],
+  },
+  dark: {
+    pie:  ['#E08A54', '#9DB47A', '#B3A491', '#F0B183', '#E0705A', '#7E7263'],
+    line: '#E09E6B',
+    grid: '#3D3225',
+    axis: '#A2937E',
+    tooltip: { bg: '#2E251B', border: '#3D3225', text: '#F5EDE0' },
+    // Koyu temada gradyanlar derinleştirildi ki beyaz yazı okunsun
+    kpi: [['#9A4732', '#5E2419'], ['#93662A', '#5C3D16'], ['#54683A', '#2F3D1D']],
+  },
+}
 
 // "2026-07" -> "Tem"
 const MONTHS_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
@@ -18,10 +43,12 @@ function monthLabel(key) {
 }
 
 // Gradyanlı, ikonlu KPI kartı (Purple template tarzı, organic renklerde)
+// NOT: yazı rengi "white" — cream-50 kullanamayız, çünkü koyu temada o renk
+// koyulaşır ve yazı gradyanın üstünde kaybolurdu.
 function KpiCard({ label, value, sub, icon: Icon, from, to }) {
   return (
     <div
-      className="relative overflow-hidden rounded-2xl p-5 text-cream-50 shadow-sm"
+      className="relative overflow-hidden rounded-2xl p-5 text-white shadow-sm"
       style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
     >
       {/* dekoratif baloncuklar */}
@@ -29,13 +56,13 @@ function KpiCard({ label, value, sub, icon: Icon, from, to }) {
       <div className="pointer-events-none absolute -bottom-10 right-10 h-20 w-20 rounded-full bg-white/10" />
 
       <div className="relative flex items-start justify-between">
-        <p className="text-sm font-medium text-cream-50/90">{label}</p>
+        <p className="text-sm font-medium text-white/90">{label}</p>
         <div className="rounded-xl bg-white/20 p-2">
           <Icon size={20} />
         </div>
       </div>
       <p className="relative mt-3 font-serif text-3xl font-semibold">{value}</p>
-      {sub && <p className="relative mt-3 text-xs text-cream-50/85">{sub}</p>}
+      {sub && <p className="relative mt-3 text-xs text-white/85">{sub}</p>}
     </div>
   )
 }
@@ -43,6 +70,8 @@ function KpiCard({ label, value, sub, icon: Icon, from, to }) {
 export default function Dashboard() {
   const [stats, setStats] = useState(null)
   const [error, setError] = useState(false)
+  const { isDark } = useTheme()
+  const c = isDark ? CHART.dark : CHART.light   // aktif grafik paleti
 
   useEffect(() => {
     getStats().then(setStats).catch(() => setError(true))
@@ -52,9 +81,22 @@ export default function Dashboard() {
     return <p className="text-overdue-tx">İstatistikler yüklenemedi — backend (uvicorn) çalışıyor mu?</p>
   if (!stats) return <p className="text-bark-400">Yükleniyor…</p>
 
-  const pieData = stats.by_category.map((c) => ({ name: c.category, value: Number(c.total) }))
+  const pieData = stats.by_category.map((x) => ({ name: x.category, value: Number(x.total) }))
   const lineData = stats.monthly_trend.map((m) => ({ name: monthLabel(m.month), total: Number(m.total) }))
   const totalCat = pieData.reduce((s, d) => s + d.value, 0)
+
+  // Recharts tooltip'i tema renklerinde
+  const tooltipProps = {
+    contentStyle: {
+      background: c.tooltip.bg,
+      border: `1px solid ${c.tooltip.border}`,
+      borderRadius: 12,
+      color: c.tooltip.text,
+    },
+    itemStyle: { color: c.tooltip.text },
+    labelStyle: { color: c.tooltip.text },
+    cursor: { fill: c.grid, fillOpacity: 0.35 },
+  }
 
   // "Bu Ay" için geçen aya göre değişim (KPI trend oku)
   const cur = Number(stats.monthly_trend.at(-1)?.total || 0)
@@ -82,24 +124,24 @@ export default function Dashboard() {
           value={formatCurrency(stats.total_overdue)}
           sub={`${stats.overdue_count} gecikmiş fatura`}
           icon={AlertTriangle}
-          from="#C96F4A"
-          to="#A03A28"
+          from={c.kpi[0][0]}
+          to={c.kpi[0][1]}
         />
         <KpiCard
           label="Gelecek 7 Gün Yükü"
           value={formatCurrency(stats.due_next_7_days)}
           sub="yaklaşan ödemeler"
           icon={CalendarClock}
-          from="#D8A75A"
-          to="#BE7B33"
+          from={c.kpi[1][0]}
+          to={c.kpi[1][1]}
         />
         <KpiCard
           label="Bu Ayın Harcaması"
           value={formatCurrency(stats.this_month_total)}
           sub={trendNode}
           icon={Wallet}
-          from="#869A5F"
-          to="#566B3A"
+          from={c.kpi[2][0]}
+          to={c.kpi[2][1]}
         />
       </div>
 
@@ -123,10 +165,10 @@ export default function Dashboard() {
                   stroke="none"
                 >
                   {pieData.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    <Cell key={i} fill={c.pie[i % c.pie.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v) => formatCurrency(v)} />
+                <Tooltip formatter={(v) => formatCurrency(v)} {...tooltipProps} />
               </PieChart>
             </ResponsiveContainer>
             {/* Merkez toplam */}
@@ -142,7 +184,7 @@ export default function Dashboard() {
               return (
                 <div key={d.name} className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2 text-bark-700">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.pie[i % c.pie.length] }} />
                     {d.name}
                   </span>
                   <span className="text-bark-500">{formatCurrency(d.value)} · %{pct}</span>
@@ -158,29 +200,30 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={lineData} margin={{ left: -6, right: 12, top: 10, bottom: 0 }}>
               <defs>
+                {/* Dolgu gradyanı da temaya göre renk değiştiriyor */}
                 <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#C2703F" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#C2703F" stopOpacity={0} />
+                  <stop offset="0%" stopColor={c.line} stopOpacity={isDark ? 0.45 : 0.35} />
+                  <stop offset="100%" stopColor={c.line} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ECE3D2" vertical={false} />
-              <XAxis dataKey="name" stroke="#9A8B78" fontSize={12} tickLine={false} axisLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
+              <XAxis dataKey="name" stroke={c.axis} fontSize={12} tickLine={false} axisLine={false} />
               <YAxis
-                stroke="#9A8B78"
+                stroke={c.axis}
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
                 width={64}
                 tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : v)}
               />
-              <Tooltip formatter={(v) => formatCurrency(v)} />
+              <Tooltip formatter={(v) => formatCurrency(v)} {...tooltipProps} />
               <Area
                 type="monotone"
                 dataKey="total"
-                stroke="#C2703F"
+                stroke={c.line}
                 strokeWidth={2.5}
                 fill="url(#trendFill)"
-                dot={{ fill: '#C2703F', r: 4 }}
+                dot={{ fill: c.line, r: 4 }}
                 activeDot={{ r: 6 }}
               />
             </AreaChart>

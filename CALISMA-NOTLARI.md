@@ -313,4 +313,57 @@ uyarı bandı. Backend `/stats`'e `due_today` listesi eklendi; frontend'de `Remi
 
 ---
 
+## 📖 Oturum 7 — Karanlık Mod (Ekstra Özellik #1) 🌙 ✅
+
+### Neler yaptık
+Tek tıkla **aydınlık ↔ karanlık** tema. Kritik nokta: sadece "arka planı siyah yapmak" değil —
+**tüm palet** (kartlar, kenarlıklar, yazılar, durum rozetleri, grafik renkleri) koyu temaya uyumlu
+karşılıklarına dönüşüyor. Tema seçimi tarayıcı hafızasında saklanıyor.
+
+### 💡 İşin püf noktası: "Anlamsal (semantic) renk değişkenleri"
+Her bileşene `dark:bg-...` yazmak yerine, renkleri **CSS değişkeni** olarak tanımladık ve karanlık
+modda **sadece o değişkenlerin değerlerini** değiştirdik:
+
+```css
+@theme        { --color-cream-50: #FBF8F1; }  /* aydınlık: kart yüzeyi krem  */
+.dark         { --color-cream-50: #231C15; }  /* karanlık: kart yüzeyi kahve */
+```
+
+`bg-cream-50` yazan **her yer** otomatik değişti — 8 bileşen dosyasına hiç dokunmadık. 🎯
+Bu yüzden renkleri baştan `bg-white` gibi değil, **anlamlarıyla** (`cream`=yüzey, `bark`=yazı,
+`clay`=vurgu) isimlendirmek çok değerli.
+
+### Çalışman gereken konular
+1. **CSS Custom Properties (değişkenler):** `--renk: değer` tanımla, `var(--renk)` ile kullan. Bir üst
+   seçicide değerini değiştirince altındaki her şey etkilenir. 🔎 *"css custom properties variables"*
+2. **Tailwind v4 karanlık mod:** `@custom-variant dark (&:where(.dark, .dark *));` → `<html class="dark">`
+   olduğunda aktifleşir. (v4'te `tailwind.config.js` yok, her şey CSS'te.) 🔎 *"tailwind v4 dark mode class"*
+3. **React Context API:** Veriyi bileşenden bileşene elden ele geçirmeden ("prop drilling") tüm ağaca
+   yayma yöntemi. `createContext` → `<Provider value={...}>` → `useContext`. 🔎 *"react context api"*
+4. **localStorage:** Tarayıcıda kalıcı küçük veri deposu. `setItem` / `getItem`. Sayfa yenilense de
+   tema seçimi kayboluyorsa buraya bak. 🔎 *"localstorage javascript"*
+5. **`prefers-color-scheme`:** Kullanıcının **işletim sistemi** teması. İlk açılışta buna uyuyoruz
+   (Windows koyu moddaysa site de koyu açılır). 🔎 *"prefers-color-scheme media query"*
+6. **FOUC (flash of unstyled content):** React yüklenene kadar yarım saniye beyaz ekran görünmesi.
+   Çözüm: `index.html`'in `<head>`ine küçük bir script koyup temayı **React'ten önce** uygulamak.
+7. **Kontrast / erişilebilirlik (a11y):** Koyu zeminde soluk gri yazı okunmaz. Yazı renklerini
+   açtık (`bark-900` aydınlıkta koyu kahve → karanlıkta krem). 🔎 *"wcag contrast ratio"*
+8. **`color-scheme: dark`:** Tarayıcının **kendi** parçalarını (kaydırma çubuğu, tarih seçici,
+   `<select>` açılır listesi) da koyulaştırır. Bunu unutursan formlar beyaz parlar.
+
+### 🐞 Dikkat ettiğimiz 3 tuzak
+| Tuzak | Neden sorun? | Çözümümüz |
+|---|---|---|
+| Modal karartması `bg-bark-900/30` | `bark-900` karanlıkta **krem** olur → perde beyazlaşır | Ayrı `--color-overlay` değişkeni (her iki temada da koyu) |
+| KPI kartı yazısı `text-cream-50` | Karanlıkta koyulaşır → gradyan üstünde kaybolur | Sabit `text-white` (gradyan zaten her iki temada koyu) |
+| Grafik renkleri (Recharts) | CSS sınıfı değil, JS prop'u (`fill="#C2703F"`) → CSS değişkeni işlemez | `CHART.light` / `CHART.dark` nesnesi + `useTheme()` ile seçim |
+
+### 🎤 Sunumda söyleyebileceğin cümle
+> *"Karanlık modu, her bileşene ayrı ayrı stil yazarak değil, anlamsal CSS değişkenleri üzerinden
+> kurguladım: tema değişince sadece değişkenlerin değerleri takas oluyor, tüm arayüz ve grafikler
+> otomatik uyum sağlıyor. Seçim localStorage'da saklanıyor, ilk girişte ise işletim sisteminin
+> tercihine uyuyor."*
+
+---
+
 <!-- Sonraki oturumların notları buraya eklenecek -->

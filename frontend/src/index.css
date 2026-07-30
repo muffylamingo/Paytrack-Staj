@@ -1,28 +1,40 @@
 @import "tailwindcss";
 
+/* Karanlık mod "class" ile çalışsın: <html class="dark"> olunca dark: sınıfları aktif.
+   (Tailwind v4'te dark modu böyle özelleştiriliyor — tailwind.config.js yok.) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ============================================================
    PayTrack — "Organic" tema paleti  (Tailwind v4 @theme)
    Buradaki her --color-... otomatik olarak bg-, text-, border-
    sınıflarına dönüşür. Örn: --color-clay-500 -> bg-clay-500
+
+   ÖNEMLİ FİKİR: Renkleri "anlamlarıyla" kullanıyoruz
+   (cream = yüzey, bark = yazı, clay = vurgu). Bu sayede karanlık
+   modda sadece AŞAĞIDAKİ .dark bloğundaki değerleri değiştirmek
+   yetiyor — hiçbir bileşene dokunmadan tüm arayüz koyu temaya
+   geçiyor. (bg-cream-50 -> otomatik koyu kahve olur.)
    ============================================================ */
 @theme {
   /* Krem / fildişi — arka plan ve yüzeyler */
-  --color-cream-50:  #FBF8F1;
-  --color-cream-100: #F5EFE3;
-  --color-cream-200: #ECE3D2;
-  --color-cream-300: #DFD3BC;
+  --color-cream-50:  #FBF8F1;   /* kart / panel yüzeyi (en açık) */
+  --color-cream-100: #F5EFE3;   /* sayfa arka planı */
+  --color-cream-200: #ECE3D2;   /* hover / küçük etiket zemini */
+  --color-cream-300: #DFD3BC;   /* kenarlık (border) */
 
   /* Kil / terracotta — vurgu (butonlar, linkler) */
   --color-clay-300:  #E6B088;
   --color-clay-400:  #D08B5E;
   --color-clay-500:  #C2703F;   /* ANA vurgu rengi */
-  --color-clay-600:  #A85C30;
+  --color-clay-600:  #A85C30;   /* hover + aktif yazı rengi */
 
-  /* Kahve / toprak — yazı ve kenarlıklar */
-  --color-bark-400:  #9A8B78;
-  --color-bark-600:  #6B5D4B;
-  --color-bark-800:  #453A2A;
-  --color-bark-900:  #2C2418;
+  /* Kahve / toprak — yazı ve kenarlıklar (400 = en soluk, 900 = en koyu) */
+  --color-bark-400:  #9A8B78;   /* soluk yardımcı yazı */
+  --color-bark-500:  #857763;
+  --color-bark-600:  #6B5D4B;   /* ikincil yazı */
+  --color-bark-700:  #574A3A;
+  --color-bark-800:  #453A2A;   /* güçlü yazı */
+  --color-bark-900:  #2C2418;   /* ana yazı rengi */
 
   /* Zeytin yeşili — ikincil (örn. "Ödendi" durumu) */
   --color-sage-500:  #7A8B5A;
@@ -35,9 +47,58 @@
   --color-overdue-bg: #F3D9D2;   /* Gecikti / yaklaşan arka plan */
   --color-overdue-tx: #A6402C;   /* Gecikti / yaklaşan yazı */
 
+  /* Modal arkasındaki karartma katmanı (her iki temada da KOYU olmalı) */
+  --color-overlay:    #2C2418;
+
   /* Fontlar */
   --font-serif: "Fraunces", Georgia, serif;   /* başlıklar (organic his) */
   --font-sans:  "Inter", system-ui, sans-serif; /* gövde metni */
+}
+
+/* ============================================================
+   🌙 KARANLIK MOD — "Organic Night"
+   Aynı değişkenlerin koyu karşılıkları. Soğuk gri değil; sıcak
+   kahve/kömür tonları seçtim ki krem temayla aynı ruhu taşısın.
+   Kademe mantığı ters çevrildi:
+     cream-100 (sayfa) en koyu  ->  cream-300 (kenarlık) daha açık
+     bark-400  (soluk yazı)     ->  bark-900 (ana yazı) en açık
+   ============================================================ */
+.dark {
+  /* Yüzeyler — sıcak kömür/kahve */
+  --color-cream-50:  #231C15;   /* kart / panel yüzeyi (sayfadan AÇIK) */
+  --color-cream-100: #1A1410;   /* sayfa arka planı (en koyu) */
+  --color-cream-200: #2E251B;   /* hover / küçük etiket zemini */
+  --color-cream-300: #3D3225;   /* kenarlık */
+
+  /* Vurgu — koyu zeminde parlasın diye biraz açıldı */
+  --color-clay-300:  #A87F4A;
+  --color-clay-400:  #E09E6B;
+  --color-clay-500:  #D98A55;   /* ANA vurgu (butonlar) */
+  --color-clay-600:  #EDA271;   /* hover + aktif yazı (daha parlak) */
+
+  /* Yazı renkleri — ters çevrildi (400 soluk … 900 en parlak) */
+  --color-bark-400:  #A2937E;
+  --color-bark-500:  #B3A491;
+  --color-bark-600:  #C3B49E;
+  --color-bark-700:  #D3C5B0;
+  --color-bark-800:  #E5DAC7;
+  --color-bark-900:  #F5EDE0;   /* ana yazı (krem) */
+
+  --color-sage-500:  #9DB47A;
+
+  /* Durum rozetleri — koyu zemin + parlak yazı */
+  --color-pending-bg: #3D2F14;
+  --color-pending-tx: #F0C978;
+  --color-paid-bg:    #26331C;
+  --color-paid-tx:    #B6CE8C;
+  --color-overdue-bg: #3D2019;
+  --color-overdue-tx: #F19E88;
+
+  --color-overlay:    #0B0806;
+
+  /* Tarayıcının kendi parçaları da (scrollbar, tarih seçici, select
+     açılır listesi) koyu görünsün: */
+  color-scheme: dark;
 }
 
 /* Sayfa geneli temel stil */
@@ -49,4 +110,6 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Tema değişince renk geçişi yumuşak olsun */
+  transition: background-color 0.25s ease, color 0.25s ease;
 }

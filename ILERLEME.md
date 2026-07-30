@@ -2,7 +2,7 @@
 
 > **Nerede kaldık?** Tek bakışta özet.
 > Detaylı plan → [PLAN.md](PLAN.md) · Çalışılacak konular → [CALISMA-NOTLARI.md](CALISMA-NOTLARI.md) · Komutlar → [KOMUTLAR.md](KOMUTLAR.md)
-> Son güncelleme: **2026-07-30**
+> Son güncelleme: **2026-07-31**
 
 **Genel ilerleme:** `▓▓▓▓▓▓▓░░` &nbsp; **7 / 9 faz tamam (~%78)**
 
@@ -16,9 +16,29 @@
 | 5 | Dashboard & Raporlama | ✅ **Bitti** | KPI kartları + grafikler (Recharts) + Excel export |
 | 6 | 🏆 Otomatik Hatırlatıcı | ✅ **Bitti** | "Bugün son ödeme günü" uyarı bandı (her sayfada) |
 | 7 | 🏆 Keycloak Giriş | ⏳ **Sıradaki** | Kullanıcı doğrulama sistemi (en zor) |
-| 8 | Cila & Sunum | ⬜ Bekliyor | 11 ekstra özellik (dark mode, tekrarlayan fatura...), README, demo |
+| 8 | Cila & Sunum (Ekstralar) | ⏳ **Devam ediyor** | 11 ekstra özellik (aşağıdaki tablo), README, demo |
 
-**Şu anki konum:** Faz 6 ✅ bitti — çekirdek + hatırlatıcı hazır! → Sırada Faz 7 (Keycloak) veya Faz 8 (ekstralar).
+**Şu anki konum:** Faz 8 başladı 🌙 — Karanlık Mod bitti. Faz 7 (Keycloak) en sona bırakıldı.
+
+---
+
+## ⭐ Faz 8 — Ekstra Özellikler (11 adet)
+
+`▓▓░░░░░░░░` &nbsp; **2 / 11 tamam (~%18)**
+
+| # | Özellik | Zorluk | Durum |
+|:--:|---------|:------:|:-----:|
+| 1 | 🌙 Karanlık Mod | 🟢 Kolay | ✅ **Bitti** |
+| 2 | KPI Trend Okları | 🟢 Kolay | ✅ **Bitti** |
+| 3 | Toast Bildirimleri | 🟢 Kolay | ⏳ Sıradaki |
+| 4 | Fatura Dosyası Ekleme | 🟡 Orta | ⬜ |
+| 5 | Tekrarlayan Faturalar | 🟡 Orta | ⬜ |
+| 6 | Bütçe Uyarısı | 🟡 Orta | ⬜ |
+| 7 | Excel'den İçe Aktarma | 🟡 Orta | ⬜ |
+| 8 | Çoklu Para Birimi + Kur | 🟡 Orta | ⬜ |
+| 9 | Çoklu Dil (TR/EN) | 🟡 Orta | ⬜ |
+| 10 | İşlem Geçmişi (Audit Log) | 🟠 Zor | ⬜ |
+| 11 | Ödeme Takvimi Görünümü | 🟠 Zor | ⬜ |
 
 ---
 **Durum işaretleri:** ✅ Bitti · ⏳ Üstünde çalışıyoruz · ⬜ Sırada bekliyor · 🏆 Challenge (ekstra görev)
