@@ -377,4 +377,42 @@ giriş animasyonu yarıda kalıyor. Çözüm: `<Pie isAnimationActive={false} />
 
 ---
 
+## 📖 Oturum 8 — Toast Bildirimleri (Ekstra Özellik #3) 🔔 ✅
+
+### Neler yaptık
+Kullanıcı bir işlem yapınca sağ üstte beliren, kendiliğinden kaybolan bildirimler:
+**"… faturası kaydedildi"**, **"… ödendi olarak işaretlendi"**, **"N fatura Excel'e aktarılıyor…"**,
+hata olursa **"Faturalar yüklenemedi"**. Üst üste yığılıyor, altında süre çubuğu var, elle de kapanıyor.
+
+### Çalışman gereken konular
+1. **Neden `alert()` değil?** `alert()` sayfayı **dondurur** (kullanıcı tamam demeden hiçbir şey
+   çalışmaz), tasarıma uymaz ve birden fazla mesaj gösteremez. Toast ise akışı kesmez. 🔎 *"toast notification ux"*
+2. **Context ile "global" fonksiyon paylaşmak:** Tema gibi burada da Context kullandık — ama bu sefer
+   paylaştığımız şey **veri değil, fonksiyon** (`toast.success(...)`). Böylece herhangi bir bileşen tek
+   satırla bildirim gösterebiliyor. Aynı kalıp: `createContext` → `Provider` → `useContext`.
+3. **`useCallback` / `useMemo`:** React her render'da fonksiyonları **yeniden üretir**. Bu yeni
+   fonksiyonlar `useEffect` bağımlılıklarını tetikleyip sonsuz döngü yapabilir. `useMemo` ile `toast`
+   nesnesini sabitledik. 🔎 *"react usememo usecallback ne zaman"*
+4. **Dizi state'ini güncelleme (immutability):** `setToasts([...list, yeni])` ve
+   `list.filter(t => t.id !== id)`. React'te diziyi **push ile değiştirmeyiz**, yenisini üretiriz. 🔎 *"react state array immutable update"*
+5. **`setTimeout` ile otomatik kapanma:** 3.5 sn sonra kendini listeden siliyor.
+6. **`key` prop'u ve `crypto.randomUUID()`:** Listede her elemanın benzersiz `key`'i olmalı, yoksa
+   React hangi elemanın silindiğini karıştırır. 🔎 *"react key prop neden gerekli"*
+7. **CSS animasyonları (`@keyframes`):** Girişte sağdan kayma (`toast-in`) + süre çubuğunun erimesi
+   (`toast-bar`). Tailwind v4'te `@theme` içine `--animate-toast-in: ...` yazınca `animate-toast-in`
+   sınıfı oluşuyor. 🔎 *"css keyframes animation"*
+8. **`role="status"`:** Ekran okuyucular bildirimi sesli okusun diye erişilebilirlik etiketi. 🔎 *"aria live region role status"*
+
+### 🎨 Tema uyumu
+Toast renkleri **yeni renk uydurmadan**, mevcut durum değişkenlerinden geliyor:
+başarı = `paid-bg/paid-tx`, hata = `overdue-bg/overdue-tx`, bilgi = `pending-bg/pending-tx`.
+Bu yüzden karanlık modda **hiçbir ek iş yapmadan** uyumlu (Oturum 7'deki değişken mantığının meyvesi 🍎).
+
+### 🎤 Sunumda söyleyebileceğin cümle
+> *"Kullanıcı geri bildirimi için `alert()` yerine kendi toast sistemimi yazdım: Context üzerinden tüm
+> uygulamadan tek satırla çağrılabiliyor, bildirimler yığılabiliyor ve 3.5 saniyede kendiliğinden
+> kapanıyor. Renkleri mevcut durum paletinden aldığı için karanlık modda da otomatik uyumlu."*
+
+---
+
 <!-- Sonraki oturumların notları buraya eklenecek -->

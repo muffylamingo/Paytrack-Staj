@@ -117,7 +117,7 @@ değiliz — bunlar bir **menü**. Roadmap'in sonunda birlikte seçeceğiz. "Etk
 |---|---------|---------------|:----:|:------:|-------|
 | 1 | **Karanlık Mod (Dark Mode)** | Tek tıkla açık/koyu tema. Tailwind ile çok kolay, çok "pro" görünür. | ⭐⭐⭐ | 🟢 Kolay | ✅ **YAPILDI** |
 | 2 | **KPI Trend Okları** | Özet kartlarında "geçen aya göre %12 ↑" gibi yön okları. | ⭐⭐⭐ | 🟢 Kolay | ✅ **YAPILDI** |
-| 3 | **Toast Bildirimleri** | "Fatura kaydedildi ✓" gibi şık anlık uyarılar. | ⭐⭐ | 🟢 Kolay | ✅ Kesin yap |
+| 3 | **Toast Bildirimleri** | "Fatura kaydedildi ✓" gibi şık anlık uyarılar. | ⭐⭐ | 🟢 Kolay | ✅ **YAPILDI** |
 | 4 | **Fatura Dosyası Ekleme** | Her faturaya PDF/görsel yükleme (dekont saklama). | ⭐⭐⭐ | 🟡 Orta | 👍 Öneri |
 | 5 | **Tekrarlayan Faturalar** | Kira/abonelik gibi her ay otomatik oluşan faturalar. **Çok "iş mantığı" gösterir.** | ⭐⭐⭐⭐ | 🟡 Orta | 👍 Öneri |
 | 6 | **Bütçe Uyarısı** | Kategoriye aylık bütçe koy, aşılınca uyar (örn. "Yazılım bütçesi doldu"). | ⭐⭐⭐ | 🟡 Orta | 👍 Öneri |

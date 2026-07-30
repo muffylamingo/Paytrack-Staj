@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { createInvoice } from '../api/invoices'
+import { useToast } from '../context/ToastContext'
 
 const CATEGORIES = ['Enerji', 'Yazılım', 'Kira', 'Mutfak']
 const CURRENCIES = ['TRY', 'USD', 'EUR']
@@ -32,6 +33,7 @@ export default function InvoiceFormModal({ open, onClose, onCreated }) {
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const toast = useToast()
 
   if (!open) return null
 
@@ -43,11 +45,14 @@ export default function InvoiceFormModal({ open, onClose, onCreated }) {
     setError('')
     try {
       await createInvoice({ ...form, amount: Number(form.amount) })
+      toast.success(`${form.vendor_name} faturası kaydedildi`)
       setForm(EMPTY)
       onCreated() // listeyi yenile
       onClose()
     } catch {
+      // Hem form içinde hem toast olarak göster (kullanıcı ikisini de kaçırmasın)
       setError('Kaydedilemedi. Alanları kontrol et (tutar 0’dan büyük olmalı).')
+      toast.error('Fatura kaydedilemedi')
     } finally {
       setSaving(false)
     }

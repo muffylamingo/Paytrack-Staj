@@ -3,6 +3,7 @@ import { Plus, Search, Check, ChevronUp, ChevronDown, ChevronsUpDown, Download }
 import { getInvoices, payInvoice } from '../api/invoices'
 import { formatCurrency, formatDate, statusBadge, isNearDue } from '../lib/format'
 import InvoiceFormModal from '../components/InvoiceFormModal'
+import { useToast } from '../context/ToastContext'
 
 const STATUSES = ['Bekliyor', 'Ödendi', 'Gecikti']
 const CATEGORIES = ['Enerji', 'Yazılım', 'Kira', 'Mutfak']
@@ -16,6 +17,7 @@ export default function Invoices() {
   const [sort, setSort] = useState('due_date')
   const [order, setOrder] = useState('asc')
   const [modalOpen, setModalOpen] = useState(false)
+  const toast = useToast()
 
   async function load() {
     setLoading(true)
@@ -25,6 +27,8 @@ export default function Invoices() {
     if (search) params.vendor = search
     try {
       setInvoices(await getInvoices(params))
+    } catch {
+      toast.error('Faturalar yüklenemedi — backend çalışıyor mu?')
     } finally {
       setLoading(false)
     }
@@ -37,9 +41,14 @@ export default function Invoices() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, status, category, sort, order])
 
-  async function handlePay(id) {
-    await payInvoice(id)
-    load()
+  async function handlePay(id, vendor) {
+    try {
+      await payInvoice(id)
+      toast.success(`${vendor} ödendi olarak işaretlendi`)
+      load()
+    } catch {
+      toast.error('Ödeme işlenemedi')
+    }
   }
 
   // Excel indir: mevcut filtre/sıralama ile export endpoint'ine yönlendir (tarayıcı dosyayı indirir)
@@ -54,6 +63,7 @@ export default function Invoices() {
     document.body.appendChild(a)
     a.click()
     a.remove()
+    toast.info(`${invoices.length} fatura Excel'e aktarılıyor…`)
   }
 
   // Bir sütuna tıklayınca: aynı sütunsa yönü çevir, farklıysa o sütuna geç (artan)
@@ -200,7 +210,7 @@ export default function Invoices() {
                     <td className="px-4 py-3 text-right">
                       {inv.status !== 'Ödendi' && (
                         <button
-                          onClick={() => handlePay(inv.id)}
+                          onClick={() => handlePay(inv.id, inv.vendor_name)}
                           className="inline-flex items-center gap-1 rounded-lg border border-paid-tx/30 px-2.5 py-1 text-xs font-medium text-paid-tx transition hover:bg-paid-bg"
                         >
                           <Check size={14} /> Öde
