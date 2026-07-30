@@ -64,6 +64,9 @@ class InvoiceOut(InvoiceBase):
     created_at: datetime
     paid_at: datetime | None = None
     user_id: int | None = None
+    # Ek dosyanın sadece ADINI dışarı veriyoruz; diskteki gerçek yolu (attachment_path)
+    # bilerek gizliyoruz — dış dünyanın sunucu klasör yapısını bilmesine gerek yok.
+    attachment_name: str | None = None
 
 
 # --- Dashboard / İstatistik şemaları (Faz 5) ---

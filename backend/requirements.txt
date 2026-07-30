@@ -8,3 +8,4 @@ alembic              # Veritabanı şema değişikliklerini yönetmek (migration
 psycopg[binary]      # PostgreSQL sürücüsü (psycopg3 - modern, Python 3.14 uyumlu)
 pydantic-settings    # Ayarları .env dosyasından okumak
 openpyxl             # Faturaları Excel (.xlsx) olarak dışa aktarma
+python-multipart     # Dosya yükleme (multipart/form-data) için FastAPI'nin ihtiyacı

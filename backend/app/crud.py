@@ -9,7 +9,7 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app import models, schemas, storage
 
 # Sıralanabilir sütunlar (kullanıcı bunların dışında bir şey gönderemez = güvenli)
 SORTABLE = {
@@ -78,8 +78,32 @@ def mark_paid(db: Session, invoice: models.Invoice) -> models.Invoice:
 
 
 def delete_invoice(db: Session, invoice: models.Invoice) -> None:
+    # Fatura silinirse ekindeki dosya diskte "öksüz" kalmasın
+    storage.delete_file(invoice.attachment_path)
     db.delete(invoice)
     db.commit()
+
+
+def set_attachment(
+    db: Session, invoice: models.Invoice, stored_name: str, original_name: str
+) -> models.Invoice:
+    """Faturaya ek dosya bağlar. Eskisi varsa diskten siler (çöp birikmesin)."""
+    storage.delete_file(invoice.attachment_path)
+    invoice.attachment_path = stored_name
+    invoice.attachment_name = original_name
+    db.commit()
+    db.refresh(invoice)
+    return invoice
+
+
+def clear_attachment(db: Session, invoice: models.Invoice) -> models.Invoice:
+    """Ek dosyayı hem diskten hem kayıttan kaldırır."""
+    storage.delete_file(invoice.attachment_path)
+    invoice.attachment_path = None
+    invoice.attachment_name = None
+    db.commit()
+    db.refresh(invoice)
+    return invoice
 
 
 def get_stats(db: Session) -> dict:

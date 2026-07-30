@@ -49,6 +49,17 @@ class Invoice(Base):
     status: Mapped[str] = mapped_column(String(20), default="Bekliyor")   # Durum
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True) # Açıklama (opsiyonel)
 
+    # --- Ek dosya (dekont/fatura PDF'i veya görseli) ---
+    # DİKKAT: Dosyanın KENDİSİNİ veritabanına koymuyoruz! Diske yazıyoruz,
+    # veritabanında sadece "nerede olduğu" ve "orijinal adı" duruyor.
+    # (Veritabanı dosya deposu değildir: yedek boyutunu şişirir, sorguları yavaşlatır.)
+    attachment_name: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )  # kullanıcının yüklediği orijinal dosya adı ("dekont.pdf")
+    attachment_path: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )  # diskteki benzersiz ad ("a3f9...c1.pdf") — uploads/ klasöründe
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

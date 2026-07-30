@@ -415,4 +415,67 @@ Bu yüzden karanlık modda **hiçbir ek iş yapmadan** uyumlu (Oturum 7'deki de�
 
 ---
 
+## 📖 Oturum 9 — Fatura Dosyası Ekleme (Ekstra Özellik #4) 📎 ✅
+
+### Neler yaptık
+Her faturaya **dekont/PDF/görsel** yükleme. Bu, ekstralar arasında **backend'e de dokunan ilk özellik**:
+yeni veritabanı sütunları + migration + 3 yeni endpoint + dosya kaydetme katmanı.
+
+| Katman | Dosya | Görevi |
+|---|---|---|
+| Model | `app/models.py` | `attachment_name`, `attachment_path` sütunları |
+| Depolama | `app/storage.py` **(yeni)** | Diske yazma, doğrulama, silme |
+| CRUD | `app/crud.py` | `set_attachment`, `clear_attachment` |
+| Router | `app/routers/invoices.py` | POST / GET / DELETE `/invoices/{id}/attachment` |
+| Frontend | `components/AttachmentCell.jsx` **(yeni)** | Tablodaki 📎 sütunu |
+
+### 💡 En önemli tasarım kararı: Dosya veritabanına konmaz!
+Veritabanına dosyanın **kendisini** değil, sadece **nerede olduğunu** yazdık. Dosya
+`backend/uploads/` klasöründe durur.
+**Neden?** Veritabanı dosya deposu değildir: yedekler devasa olur, sorgular yavaşlar, bellek şişer.
+Kurumsal sistemlerde dosyalar diskte veya bulutta (AWS S3 gibi) tutulur. 🔎 *"storing files in database vs filesystem"*
+
+### 🔒 Güvenlik — dosya yükleme internetin en çok saldırı alan yeridir
+| Önlem | Neden? |
+|---|---|
+| **Tür beyaz listesi** (sadece PDF/JPG/PNG/WEBP) | `.exe`, `.php` yüklenip sunucuda çalıştırılmasın |
+| **Boyut sınırı** (5 MB) | Kötü niyetli biri diski doldurup sunucuyu çökertmesin |
+| **Adı BİZ üretiyoruz** (`uuid4().hex`) | En kritiği ⚠️ Kullanıcının gönderdiği ad `../../.env` olabilir; onu yol olarak kullanırsak başka dosyaların üzerine yazılır → **path traversal** açığı |
+| Orijinal ad ayrı sütunda | Kullanıcı yine "dekont.pdf" olarak indirir, ama disk güvende |
+| `attachment_path` API'den **dönmüyor** | Dış dünya sunucu klasör yapısını bilmesin |
+
+🔎 *"path traversal vulnerability"*, *"unrestricted file upload owasp"*
+
+### Çalışman gereken konular
+1. **Alembic migration akışı:** Model değişti → `alembic revision --autogenerate -m "..."` (Alembic
+   modeli veritabanıyla karşılaştırıp farkı bulur) → dosyayı **oku/kontrol et** → `alembic upgrade head`.
+   Sütun eklerken `nullable=True` olmalı, yoksa mevcut satırlar ne olacak? 🔎 *"alembic autogenerate"*
+2. **`multipart/form-data`:** Dosya JSON'a sığmaz (JSON metindir). Tarayıcı dosyayı bu formatla gönderir.
+   FastAPI'nin bunu okuyabilmesi için **`python-multipart`** paketi şart. 🔎 *"multipart form data nedir"*
+3. **FastAPI'de `UploadFile` ve `async`:** `await file.read()` → içeriği bayt olarak alır.
+4. **`FileResponse`:** Dosyayı `filename=` ile döndürünce tarayıcı **orijinal adıyla** indirir
+   (`Content-Disposition` başlığı). 🔎 *"content-disposition attachment"*
+5. **HTTP durum kodları:** Yasaklı tür → **400** (kullanıcı hatası), fatura yok → **404**. **500 değil**,
+   çünkü sunucu bozuk değil. 🔎 *"http status codes 4xx vs 5xx"*
+6. **Frontend `FormData`:** `form.append('file', file)` — axios Content-Type'ı otomatik ayarlar, elle yazma.
+7. **`useRef` + gizli `<input type="file">`:** Tarayıcının çirkin dosya seçicisi stillendirilemez;
+   gizleyip kendi butonumuzla `inputRef.current.click()` diyoruz. Çok yaygın React kalıbı. 🔎 *"react hidden file input useref"*
+8. **Öksüz dosya (orphan file) sorunu:** Fatura silinince ekini de sildik; yeni dosya yüklenince eskisini
+   sildik. Yoksa disk zamanla çöple dolar.
+9. **`.gitignore`:** `backend/uploads/` git'e girmiyor — kod deposu dosya deposu değildir, ayrıca
+   başkasının faturası repoya yüklenmemeli.
+
+### 🧪 Test ettiklerimiz
+`curl` ile: geçerli PDF ✅ · `.exe` → **400 + açıklayıcı mesaj** ✅ · olmayan fatura → **404** ✅ ·
+indirme → orijinal ad + bayt bayt aynı ✅ · silme → diskten de gitti ✅
+Arayüzden: yükleme ✅ · yasaklı türde **backend'in mesajı toast'ta** ✅ · kaldırma ✅
+
+### 🎤 Sunumda söyleyebileceğin cümle
+> *"Faturalara dekont ekleme özelliği yazdım. Dosyaları veritabanına değil diske kaydediyorum;
+> veritabanında sadece referansı tutuluyor. Yükleme uç noktasında tür beyaz listesi ve boyut sınırı
+> var, dosya adını da sunucu tarafında UUID ile ben üretiyorum — böylece path traversal saldırısı
+> mümkün değil. Şema değişikliğini Alembic migration'ı ile yönettim."*
+
+---
+
 <!-- Sonraki oturumların notları buraya eklenecek -->

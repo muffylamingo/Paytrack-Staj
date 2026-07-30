@@ -9,17 +9,23 @@ PDF 2. + 4. + 5. Aşama işlemleri:
   PUT    /invoices/{id}      -> güncelle
   PATCH  /invoices/{id}/pay  -> "Ödendi" işaretle
   DELETE /invoices/{id}      -> sil
+
+Ekstra (Özellik #4 — dosya eki):
+  POST   /invoices/{id}/attachment -> dekont/PDF yükle
+  GET    /invoices/{id}/attachment -> ekli dosyayı indir
+  DELETE /invoices/{id}/attachment -> eki kaldır
 """
 import io
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
+from fastapi.responses import FileResponse
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
-from app import crud, schemas
+from app import crud, models, schemas, storage
 from app.database import get_db
 
 router = APIRouter(prefix="/invoices", tags=["Faturalar"])
@@ -132,3 +138,55 @@ def delete_invoice(invoice_id: int, db: Session = Depends(get_db)):
     if not invoice:
         raise HTTPException(status_code=404, detail="Fatura bulunamadı")
     crud.delete_invoice(db, invoice)
+
+
+# ---------------------------------------------------------------
+# Ek dosya (dekont/fatura PDF'i veya görseli)  — Ekstra Özellik #4
+# ---------------------------------------------------------------
+def _get_or_404(db: Session, invoice_id: int) -> models.Invoice:
+    """Tekrar eden 404 kontrolünü tek yerde topladık."""
+    invoice = crud.get_invoice(db, invoice_id)
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Fatura bulunamadı")
+    return invoice
+
+
+@router.post("/{invoice_id}/attachment", response_model=schemas.InvoiceOut)
+async def upload_attachment(
+    invoice_id: int,
+    file: UploadFile = File(..., description="PDF/JPG/PNG/WEBP — en fazla 5 MB"),
+    db: Session = Depends(get_db),
+):
+    """Faturaya dekont/fatura dosyası yükler. Zaten ek varsa üzerine yazar."""
+    invoice = _get_or_404(db, invoice_id)
+    content = await file.read()   # dosya içeriğini belleğe al (5 MB sınırı var)
+    try:
+        stored_name = storage.save_upload(content, file.content_type)
+    except storage.UploadError as e:
+        # 400 = Bad Request (kullanıcı hatası); 500 değil, çünkü sunucu bozuk değil
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return crud.set_attachment(db, invoice, stored_name, file.filename or "dosya")
+
+
+@router.get("/{invoice_id}/attachment")
+def download_attachment(invoice_id: int, db: Session = Depends(get_db)):
+    """Faturaya ekli dosyayı indirir (orijinal adıyla)."""
+    invoice = _get_or_404(db, invoice_id)
+    if not invoice.attachment_path:
+        raise HTTPException(status_code=404, detail="Bu faturada ek dosya yok")
+
+    path = storage.file_path(invoice.attachment_path)
+    if not path.exists():
+        # Veritabanında kayıt var ama dosya diskte yok (elle silinmiş olabilir)
+        raise HTTPException(status_code=404, detail="Dosya diskte bulunamadı")
+
+    return FileResponse(path, filename=invoice.attachment_name or path.name)
+
+
+@router.delete("/{invoice_id}/attachment", response_model=schemas.InvoiceOut)
+def remove_attachment(invoice_id: int, db: Session = Depends(get_db)):
+    """Faturanın ek dosyasını kaldırır (fatura kalır, sadece dosya silinir)."""
+    invoice = _get_or_404(db, invoice_id)
+    if not invoice.attachment_path:
+        raise HTTPException(status_code=404, detail="Bu faturada ek dosya yok")
+    return crud.clear_attachment(db, invoice)

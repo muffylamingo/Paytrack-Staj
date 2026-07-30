@@ -4,6 +4,7 @@ import { getInvoices, payInvoice } from '../api/invoices'
 import { formatCurrency, formatDate, statusBadge, isNearDue } from '../lib/format'
 import InvoiceFormModal from '../components/InvoiceFormModal'
 import { useToast } from '../context/ToastContext'
+import AttachmentCell from '../components/AttachmentCell'
 
 const STATUSES = ['Bekliyor', 'Ödendi', 'Gecikti']
 const CATEGORIES = ['Enerji', 'Yazılım', 'Kira', 'Mutfak']
@@ -168,19 +169,20 @@ export default function Invoices() {
               <Th field="amount" align="right">Tutar</Th>
               <Th field="due_date">Son Ödeme</Th>
               <Th field="status">Durum</Th>
+              <th className="px-4 py-3 text-right">Ek</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-cream-200">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-bark-400">
+                <td colSpan={8} className="px-4 py-10 text-center text-bark-400">
                   Yükleniyor…
                 </td>
               </tr>
             ) : invoices.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-bark-400">
+                <td colSpan={8} className="px-4 py-10 text-center text-bark-400">
                   Fatura bulunamadı. “Yeni Fatura” ile ekleyebilirsin.
                 </td>
               </tr>
@@ -206,6 +208,9 @@ export default function Invoices() {
                       <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusBadge(inv.status)}`}>
                         {inv.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <AttachmentCell invoice={inv} onChanged={load} />
                     </td>
                     <td className="px-4 py-3 text-right">
                       {inv.status !== 'Ödendi' && (

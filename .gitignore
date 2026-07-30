@@ -25,5 +25,9 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
+# ---- Kullanıcının yüklediği dosyalar (dekontlar) ----
+# Kod deposu dosya deposu değildir; ayrıca başkasının faturası git'e girmemeli.
+backend/uploads/
+
 # ---- Diğer ----
 *.log
