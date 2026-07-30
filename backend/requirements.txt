@@ -1,0 +1,10 @@
+# PayTrack — Backend Python bağımlılıkları
+# Kurulum:  .venv\Scripts\python.exe -m pip install -r requirements.txt
+
+fastapi              # Web API çatısı (endpoint'ler: POST /invoices, GET /invoices ...)
+uvicorn              # FastAPI'yi çalıştıran sunucu (--reload ile otomatik yenilenir)
+sqlalchemy           # ORM: veritabanı tablolarını Python sınıfı olarak yazmak
+alembic              # Veritabanı şema değişikliklerini yönetmek (migration)
+psycopg[binary]      # PostgreSQL sürücüsü (psycopg3 - modern, Python 3.14 uyumlu)
+pydantic-settings    # Ayarları .env dosyasından okumak
+openpyxl             # Faturaları Excel (.xlsx) olarak dışa aktarma

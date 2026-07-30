@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* ============================================================
+   PayTrack — "Organic" tema paleti  (Tailwind v4 @theme)
+   Buradaki her --color-... otomatik olarak bg-, text-, border-
+   sınıflarına dönüşür. Örn: --color-clay-500 -> bg-clay-500
+   ============================================================ */
+@theme {
+  /* Krem / fildişi — arka plan ve yüzeyler */
+  --color-cream-50:  #FBF8F1;
+  --color-cream-100: #F5EFE3;
+  --color-cream-200: #ECE3D2;
+  --color-cream-300: #DFD3BC;
+
+  /* Kil / terracotta — vurgu (butonlar, linkler) */
+  --color-clay-300:  #E6B088;
+  --color-clay-400:  #D08B5E;
+  --color-clay-500:  #C2703F;   /* ANA vurgu rengi */
+  --color-clay-600:  #A85C30;
+
+  /* Kahve / toprak — yazı ve kenarlıklar */
+  --color-bark-400:  #9A8B78;
+  --color-bark-600:  #6B5D4B;
+  --color-bark-800:  #453A2A;
+  --color-bark-900:  #2C2418;
+
+  /* Zeytin yeşili — ikincil (örn. "Ödendi" durumu) */
+  --color-sage-500:  #7A8B5A;
+
+  /* Durum rozetleri (fatura durumu renkleri) */
+  --color-pending-bg: #F3E3C8;   /* Bekliyor arka plan */
+  --color-pending-tx: #8A5E1C;   /* Bekliyor yazı */
+  --color-paid-bg:    #E4EAD5;   /* Ödendi arka plan */
+  --color-paid-tx:    #52672F;   /* Ödendi yazı */
+  --color-overdue-bg: #F3D9D2;   /* Gecikti / yaklaşan arka plan */
+  --color-overdue-tx: #A6402C;   /* Gecikti / yaklaşan yazı */
+
+  /* Fontlar */
+  --font-serif: "Fraunces", Georgia, serif;   /* başlıklar (organic his) */
+  --font-sans:  "Inter", system-ui, sans-serif; /* gövde metni */
+}
+
+/* Sayfa geneli temel stil */
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--color-cream-100);
+  color: var(--color-bark-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

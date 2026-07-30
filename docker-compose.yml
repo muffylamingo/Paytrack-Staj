@@ -1,0 +1,24 @@
+# ============================================================================
+#  PayTrack — PostgreSQL veritabanı (Docker ile)
+#  Bu dosya "docker compose up -d" komutuyla tek tıkta bir PostgreSQL veritabanı
+#  başlatır. Bilgisayarına PostgreSQL kurman gerekmez; her şey bir "container"
+#  (izole kutucuk) içinde çalışır.
+# ============================================================================
+
+services:
+  db:                              # servisin adı (istediğimiz gibi çağırırız)
+    image: postgres:16             # hazır PostgreSQL 16 imajı (Docker internetten indirir)
+    container_name: paytrack_db    # container'ın görünen adı
+    restart: unless-stopped        # bilgisayar yeniden başlarsa DB de otomatik açılsın
+    environment:                   # veritabanı kullanıcı bilgileri (SADECE yerel geliştirme için)
+      POSTGRES_USER: paytrack      # kullanıcı adı
+      POSTGRES_PASSWORD: paytrack  # şifre (yerelde çalıştığı için basit tutuyoruz)
+      POSTGRES_DB: paytrack        # otomatik oluşturulacak veritabanının adı
+    ports:
+      - "5432:5432"                # sol=bilgisayarın portu, sağ=container portu. Backend buraya bağlanacak.
+    volumes:
+      - paytrack_pgdata:/var/lib/postgresql/data   # veriyi kalıcı sakla (container silinse de kaybolmasın)
+
+# Docker'ın veriyi sakladığı "kalıcı disk alanı"
+volumes:
+  paytrack_pgdata:

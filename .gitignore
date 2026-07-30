@@ -1,0 +1,29 @@
+# ---- Python / Backend ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# ---- Ortam değişkenleri (gizli bilgiler) ----
+.env
+*.env
+!.env.example
+
+# ---- Node / Frontend ----
+node_modules/
+dist/
+build/
+.vite/
+npm-debug.log*
+
+# ---- Editör / İşletim sistemi ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ---- Diğer ----
+*.log
