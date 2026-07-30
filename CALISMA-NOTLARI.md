@@ -358,6 +358,17 @@ Bu yüzden renkleri baştan `bg-white` gibi değil, **anlamlarıyla** (`cream`=y
 | KPI kartı yazısı `text-cream-50` | Karanlıkta koyulaşır → gradyan üstünde kaybolur | Sabit `text-white` (gradyan zaten her iki temada koyu) |
 | Grafik renkleri (Recharts) | CSS sınıfı değil, JS prop'u (`fill="#C2703F"`) → CSS değişkeni işlemez | `CHART.light` / `CHART.dark` nesnesi + `useTheme()` ile seçim |
 
+### 🐞 Bonus hata: "Donut grafik boş çiziliyordu"
+Renkleri kontrol ederken fark ettim: pasta grafiğin dilimleri **hiç görünmüyordu**. Tarayıcının
+inceleme aracında baktığımda `<g class="recharts-pie-sector">` etiketleri vardı ama **içleri boştu**
+(`<path>` hiç oluşmamıştı). Sebep: `recharts 3` + React **StrictMode** ikilisinde pasta grafiğin
+giriş animasyonu yarıda kalıyor. Çözüm: `<Pie isAnimationActive={false} />`.
+
+- **StrictMode nedir?** React'in geliştirme modunda bileşenleri **iki kez** çalıştırıp hata avlayan
+  koruma kalkanı (`main.jsx`'te `<StrictMode>`). Bazı animasyon kütüphaneleri buna takılır. 🔎 *"react strictmode double render"*
+- **Ders:** Bir şeyin "çalıştığını" sadece metin görerek doğrulama — **DOM'a bak**. Sayfa metni
+  doğruydu ama grafik boştu; fark etmemiz ancak elemanları incelediğimizde oldu. 🔎 *"chrome devtools inspect element"*
+
 ### 🎤 Sunumda söyleyebileceğin cümle
 > *"Karanlık modu, her bileşene ayrı ayrı stil yazarak değil, anlamsal CSS değişkenleri üzerinden
 > kurguladım: tema değişince sadece değişkenlerin değerleri takas oluyor, tüm arayüz ve grafikler

@@ -163,6 +163,9 @@ export default function Dashboard() {
                   outerRadius={104}
                   paddingAngle={2}
                   stroke="none"
+                  // Giriş animasyonu KAPALI: recharts 3 + React StrictMode ikilisinde
+                  // animasyon bazen yarıda kalıyor ve dilimler hiç çizilmiyordu.
+                  isAnimationActive={false}
                 >
                   {pieData.map((_, i) => (
                     <Cell key={i} fill={c.pie[i % c.pie.length]} />
