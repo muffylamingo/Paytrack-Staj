@@ -125,7 +125,7 @@ değiliz — bunlar bir **menü**. Roadmap'in sonunda birlikte seçeceğiz. "Etk
 | 8 | **Çoklu Para Birimi + Kur** | USD/EUR faturaları TL karşılığıyla göster (sabit veya canlı kur). | ⭐⭐⭐ | 🟡 Orta | ✅ **YAPILDI** |
 | 9 | **İşlem Geçmişi (Audit Log)** | "Kim, ne zaman, neyi değiştirdi" kaydı. Kurumsal ciddiyet katar. | ⭐⭐⭐ | 🟠 Zor | Opsiyonel |
 | 10 | **Ödeme Takvimi Görünümü** | Faturaları takvim üzerinde göster (hangi gün ne ödenecek). | ⭐⭐ | 🟠 Zor | Opsiyonel |
-| 11 | **Çoklu Dil (TR/EN)** | Arayüzü İngilizce/Türkçe değiştirme. | ⭐⭐ | 🟡 Orta | Opsiyonel |
+| 11 | **Çoklu Dil (TR/EN)** | Arayüzü İngilizce/Türkçe değiştirme. | ⭐⭐ | 🟡 Orta | ✅ **YAPILDI** |
 
 > **KARAR (2026-07-27):** Kullanıcı **hepsini** istedi. ✅ Hepsi plana dahil. Ama toplu değil,
 > **kolaydan zora serpiştirerek** yapacağız: kolaylar (1,2,3) arayüzü kurarken; orta seviye (4,5,6,7,8,11)

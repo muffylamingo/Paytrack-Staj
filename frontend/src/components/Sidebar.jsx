@@ -1,14 +1,18 @@
 import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, ReceiptText, BarChart3 } from 'lucide-react'
+import { useLang } from '../context/LanguageContext'
 
 // Sadece PROJEYE lazım olan menü öğeleri (template'in gereksiz demo sayfaları yok)
+// Etiketler artık sabit metin değil, çeviri anahtarı.
 const nav = [
-  { to: '/panel', label: 'Gösterge Paneli', icon: LayoutDashboard },
-  { to: '/faturalar', label: 'Faturalar', icon: ReceiptText },
-  { to: '/raporlar', label: 'Raporlar', icon: BarChart3 },
+  { to: '/panel', key: 'nav.dashboard', icon: LayoutDashboard },
+  { to: '/faturalar', key: 'nav.invoices', icon: ReceiptText },
+  { to: '/raporlar', key: 'nav.reports', icon: BarChart3 },
 ]
 
 export default function Sidebar() {
+  const { t } = useLang()
+
   return (
     <aside className="flex w-64 flex-col border-r border-cream-300 bg-cream-50">
       {/* Logo */}
@@ -21,7 +25,7 @@ export default function Sidebar() {
 
       {/* Menü */}
       <nav className="flex-1 space-y-1 px-3">
-        {nav.map(({ to, label, icon: Icon }) => (
+        {nav.map(({ to, key, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -34,7 +38,7 @@ export default function Sidebar() {
             }
           >
             <Icon size={18} />
-            {label}
+            {t(key)}
           </NavLink>
         ))}
       </nav>
@@ -46,7 +50,7 @@ export default function Sidebar() {
         </div>
         <div className="text-sm">
           <div className="font-medium text-bark-900">ODAKENT</div>
-          <div className="text-xs text-bark-400">Stajyer</div>
+          <div className="text-xs text-bark-400">{t('nav.role')}</div>
         </div>
       </div>
     </aside>

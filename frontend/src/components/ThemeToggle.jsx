@@ -1,15 +1,17 @@
 import { Sun, Moon } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
+import { useLang } from '../context/LanguageContext'
 
 // Aydınlık / karanlık mod düğmesi (kayan topuzlu şık anahtar)
 export default function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme()
+  const { t } = useLang()
 
   return (
     <button
       onClick={toggleTheme}
-      title={isDark ? 'Aydınlık moda geç' : 'Karanlık moda geç'}
-      aria-label="Tema değiştir"
+      title={isDark ? t('theme.toLight') : t('theme.toDark')}
+      aria-label={t('theme.label')}
       className="relative flex h-9 w-16 items-center rounded-full border border-cream-300 bg-cream-200 px-1 transition hover:border-clay-400"
     >
       {/* Kayan topuz */}

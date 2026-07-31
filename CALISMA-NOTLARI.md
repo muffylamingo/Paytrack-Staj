@@ -760,4 +760,71 @@ sıralamak istersek sıralamayı Python tarafına almamız gerekir.
 
 ---
 
+## 📖 Oturum 14 — Çoklu Dil / TR-EN (Ekstra #9) 🌍 ✅
+
+### Neler yaptık
+Arayüzün tamamı **Türkçe ↔ İngilizce**. Üst bardaki `TR | EN` düğmesiyle anında değişiyor,
+tercih tarayıcıda saklanıyor.
+
+| Dosya | Görevi |
+|---|---|
+| `i18n/tr.js`, `i18n/en.js` **(yeni)** | Metin sözlükleri (aynı anahtar yapısı) |
+| `context/LanguageContext.jsx` **(yeni)** | `lang` durumu + `t()` fonksiyonu |
+| `components/LanguageToggle.jsx` **(yeni)** | TR \| EN düğmesi |
+| `lib/format.js` | Para/tarih biçimi artık dile göre |
+
+### 💡 i18n nedir?
+**i18n** = *internationalization* ("i" + arada 18 harf + "n" — programcı şakası).
+Metinleri bileşenlerin içine yazmak yerine sözlükte toplayıp `t('nav.invoices')` ile çağırıyoruz.
+
+> Gerçek projelerde genelde **`react-i18next`** kütüphanesi kullanılır (çoğul kuralları, dosya
+> bölme vb. de halleder). Biz mantığı görmek için küçük bir sürümünü kendimiz yazdık —
+> Theme ve Toast ile **aynı Context kalıbı**. 🔎 *"react-i18next"*
+
+### ⭐ En önemli kural: VERİYİ değil, GÖSTERİMİ çevir
+Veritabanında kategori **"Yazılım"** olarak durur. İngilizce arayüzde **"Software" YAZAR** ama
+`<option value>` yine **"Yazılım"**dır ve backend'e o gider.
+```jsx
+<option key={c} value={c}>{t(`category.${c}`)}</option>
+      // value: veri (TR)      etiket: gösterim (çevrili)
+```
+Veriyi çevirseydik veritabanı iki dilli olurdu → filtreler bozulur, raporlar tutmaz. **Kaos.**
+Aynı sebeple tedarikçi adı ("Ofis Kirası") İngilizce modda da Türkçe kalıyor — o bir veri.
+
+### Çalışman gereken konular
+1. **Sözlük + anahtar tasarımı:** `t('invoices.columns.amount')` gibi gruplanmış anahtarlar.
+   Eksik anahtarda Türkçeye, o da yoksa anahtarın kendisine düşüyoruz (**fallback**).
+2. **Yer tutucu (placeholder) değiştirme:** `t('invoices.count', { count: 17 })` →
+   `"{count} kayıt"` içindeki `{count}` yerine 17 yazılır.
+3. **`Intl` / `toLocaleString` bölge kodları:** Bu iş sadece kelime çevirmek değil!
+   ```
+   tr-TR -> 24.000,00 ₺   ·  01 Mar 2026   ·  31 Temmuz Cuma
+   en-US -> 24,000.00 ₺   ·  Mar 01, 2026  ·  Friday, July 31
+   ```
+   **Binlik ve ondalık ayıraçlar yer değiştiriyor** — sadece dili çevirip sayıyı unutursan
+   kullanıcı yanlış rakam okur. 🔎 *"javascript intl numberformat locale"*
+4. **`<html lang>` özniteliği:** Erişilebilirlik (ekran okuyucu doğru telaffuz eder) ve tarayıcı
+   çevirisi için önemli. 🔎 *"html lang attribute accessibility"*
+5. **Tarayıcı dilini algılama:** İlk açılışta `navigator.language` bakılıyor, sonra seçim
+   `localStorage`'a yazılıyor.
+
+### 🐞 Karşılaştığımız iki hata
+| Hata | Sebep | Çözüm |
+|---|---|---|
+| Dil değişti ama **sayı/tarih eski biçimde** kaldı | `setLocale`'i `useEffect` içinde çağırıyordum; useEffect **render'dan sonra** çalışır, yani ilk render eski biçimle çizilir | `setLocale` çağrısını **render sırasına** (provider gövdesine) taşıdım |
+| `t` fonksiyonu bazen tanımsız davranacaktı | `const t = setTimeout(...)` satırı çeviri fonksiyonunu **gölgeliyordu** (shadowing) | değişkeni `timer` diye yeniden adlandırdım |
+
+> 🎓 Ders: `useEffect` "render bittikten sonra" demektir. Ekranda **hemen** görünmesi gereken bir
+> şey varsa oraya koyma. 🔎 *"react useeffect timing render"*
+> Ders 2: Tek harfli değişken adları (`t`, `s`, `e`) çakışma üretir — dikkatli ol.
+
+### 🎤 Sunumda söyleyebileceğin cümle
+> *"Arayüzü Türkçe ve İngilizce olarak iki dilli hale getirdim. Metinleri sözlük dosyalarında
+> topladım ve Context üzerinden dağıttım. Önemli bir tasarım kararı olarak veriyi değil sadece
+> gösterimi çeviriyorum: kategori veritabanında hep Türkçe kalıyor, İngilizce arayüzde yalnızca
+> etiketi değişiyor. Ayrıca para ve tarih biçimlerini de bölgeye göre ayarladım — İngilizcede
+> binlik ayıracı nokta değil virgül oluyor."*
+
+---
+
 <!-- Sonraki oturumların notları buraya eklenecek -->

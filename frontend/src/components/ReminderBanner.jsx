@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { Bell, X } from 'lucide-react'
 import { getStats } from '../api/stats'
 import { formatCurrency } from '../lib/format'
+import { useLang } from '../context/LanguageContext'
 
 // Otomatik Hatırlatıcı: son ödeme tarihi BUGÜN olan (ödenmemiş) faturalar için uyarı bandı.
 export default function ReminderBanner() {
   const [items, setItems] = useState([])
   const [closed, setClosed] = useState(false)
+  const { t } = useLang()
 
   useEffect(() => {
     getStats()
@@ -23,14 +25,14 @@ export default function ReminderBanner() {
     <div className="mb-4 flex items-start gap-3 rounded-2xl border border-clay-300 bg-pending-bg px-4 py-3 text-pending-tx">
       <Bell size={18} className="mt-0.5 shrink-0" />
       <p className="flex-1 text-sm">
-        <span className="font-semibold">🔔 Bugün son ödeme günü: {items.length} fatura</span>
+        <span className="font-semibold">{t('reminder.title', { count: items.length })}</span>
         {' — '}
-        {vendors} · toplam <b>{formatCurrency(total)}</b>
+        {vendors} · {t('reminder.total')} <b>{formatCurrency(total)}</b>
       </p>
       <button
         onClick={() => setClosed(true)}
         className="shrink-0 rounded-lg p-1 transition hover:bg-clay-300/50"
-        title="Kapat"
+        title={t('common.close')}
       >
         <X size={16} />
       </button>

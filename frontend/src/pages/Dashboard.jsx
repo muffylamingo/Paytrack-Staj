@@ -9,6 +9,7 @@ import { getStats } from '../api/stats'
 import { getBudgets } from '../api/budgets'
 import { formatCurrency } from '../lib/format'
 import { useTheme } from '../context/ThemeContext'
+import { useLang } from '../context/LanguageContext'
 import BudgetBar from '../components/BudgetBar'
 
 /*
@@ -38,11 +39,10 @@ const CHART = {
   },
 }
 
-// "2026-07" -> "Tem"
-const MONTHS_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
-function monthLabel(key) {
+// "2026-07" -> "Tem" (tr) / "Jul" (en) — ay adları da sözlükten geliyor
+function monthLabel(key, months) {
   const m = Number(key.split('-')[1])
-  return MONTHS_TR[m - 1] || key
+  return months[m - 1] || key
 }
 
 // Gradyanlı, ikonlu KPI kartı (Purple template tarzı, organic renklerde)
@@ -75,6 +75,7 @@ export default function Dashboard() {
   const [budgets, setBudgets] = useState([])
   const [error, setError] = useState(false)
   const { isDark } = useTheme()
+  const { t } = useLang()
   const c = isDark ? CHART.dark : CHART.light   // aktif grafik paleti
 
   useEffect(() => {
@@ -83,12 +84,12 @@ export default function Dashboard() {
     getBudgets().then(setBudgets).catch(() => {})
   }, [])
 
-  if (error)
-    return <p className="text-overdue-tx">İstatistikler yüklenemedi — backend (uvicorn) çalışıyor mu?</p>
-  if (!stats) return <p className="text-bark-400">Yükleniyor…</p>
+  if (error) return <p className="text-overdue-tx">{t('dashboard.statsError')}</p>
+  if (!stats) return <p className="text-bark-400">{t('common.loading')}</p>
 
-  const pieData = stats.by_category.map((x) => ({ name: x.category, value: Number(x.total) }))
-  const lineData = stats.monthly_trend.map((m) => ({ name: monthLabel(m.month), total: Number(m.total) }))
+  // Kategori adları grafikte de çevrili görünsün
+  const pieData = stats.by_category.map((x) => ({ name: t(`category.${x.category}`), value: Number(x.total) }))
+  const lineData = stats.monthly_trend.map((m) => ({ name: monthLabel(m.month, t('months')), total: Number(m.total) }))
   const totalCat = pieData.reduce((s, d) => s + d.value, 0)
 
   // Recharts tooltip'i tema renklerinde
@@ -107,42 +108,42 @@ export default function Dashboard() {
   // "Bu Ay" için geçen aya göre değişim (KPI trend oku)
   const cur = Number(stats.monthly_trend.at(-1)?.total || 0)
   const prev = Number(stats.monthly_trend.at(-2)?.total || 0)
-  let trendNode = <>{stats.unpaid_count} ödenmemiş fatura</>
+  let trendNode = <>{t('dashboard.unpaidSub', { count: stats.unpaid_count })}</>
   if (prev > 0) {
     const pct = Math.round(((cur - prev) / prev) * 100)
     const up = pct >= 0
     trendNode = (
       <span className="inline-flex items-center gap-1">
         {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-        geçen aya göre %{Math.abs(pct)}
+        {t('dashboard.trend', { percent: Math.abs(pct) })}
       </span>
     )
   }
 
   return (
     <div>
-      <h1 className="mb-6 font-serif text-3xl font-semibold text-bark-900">Gösterge Paneli</h1>
+      <h1 className="mb-6 font-serif text-3xl font-semibold text-bark-900">{t('dashboard.title')}</h1>
 
       {/* 3 gradyanlı KPI kartı */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <KpiCard
-          label="Toplam Gecikmiş Borç"
+          label={t('dashboard.overdue')}
           value={formatCurrency(stats.total_overdue)}
-          sub={`${stats.overdue_count} gecikmiş fatura`}
+          sub={t('dashboard.overdueSub', { count: stats.overdue_count })}
           icon={AlertTriangle}
           from={c.kpi[0][0]}
           to={c.kpi[0][1]}
         />
         <KpiCard
-          label="Gelecek 7 Gün Yükü"
+          label={t('dashboard.next7')}
           value={formatCurrency(stats.due_next_7_days)}
-          sub="yaklaşan ödemeler"
+          sub={t('dashboard.next7Sub')}
           icon={CalendarClock}
           from={c.kpi[1][0]}
           to={c.kpi[1][1]}
         />
         <KpiCard
-          label="Bu Ayın Harcaması"
+          label={t('dashboard.thisMonth')}
           value={formatCurrency(stats.this_month_total)}
           sub={trendNode}
           icon={Wallet}
@@ -155,9 +156,9 @@ export default function Dashboard() {
       {budgets.length > 0 && (
         <div className="mb-6 rounded-2xl border border-cream-300 bg-cream-50 p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-medium text-bark-800">Bu Ayki Bütçe Durumu</h2>
+            <h2 className="font-medium text-bark-800">{t('dashboard.budgetStatus')}</h2>
             <Link to="/raporlar" className="text-xs font-medium text-clay-600 hover:underline">
-              Bütçeleri düzenle →
+              {t('dashboard.editBudgets')}
             </Link>
           </div>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -172,7 +173,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         {/* Donut: kategori dağılımı + yüzdeli açıklama */}
         <div className="rounded-2xl border border-cream-300 bg-cream-50 p-5 lg:col-span-2">
-          <h2 className="mb-2 font-medium text-bark-800">Kategori Dağılımı</h2>
+          <h2 className="mb-2 font-medium text-bark-800">{t('dashboard.byCategory')}</h2>
           <div className="relative">
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
@@ -199,7 +200,7 @@ export default function Dashboard() {
             </ResponsiveContainer>
             {/* Merkez toplam */}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xs text-bark-400">Toplam</span>
+              <span className="text-xs text-bark-400">{t('common.total')}</span>
               <span className="font-serif text-lg font-semibold text-bark-900">{formatCurrency(totalCat)}</span>
             </div>
           </div>
@@ -222,7 +223,7 @@ export default function Dashboard() {
 
         {/* Alan grafiği: 6 aylık trend (dolgulu çizgi) */}
         <div className="rounded-2xl border border-cream-300 bg-cream-50 p-5 lg:col-span-3">
-          <h2 className="mb-4 font-medium text-bark-800">Son 6 Ay Ödeme Trendi</h2>
+          <h2 className="mb-4 font-medium text-bark-800">{t('dashboard.monthlyTrend')}</h2>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={lineData} margin={{ left: -6, right: 12, top: 10, bottom: 0 }}>
               <defs>

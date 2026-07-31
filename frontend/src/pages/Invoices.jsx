@@ -5,6 +5,7 @@ import ImportResultModal from '../components/ImportResultModal'
 import { formatCurrency, formatDate, statusBadge, isNearDue } from '../lib/format'
 import InvoiceFormModal from '../components/InvoiceFormModal'
 import { useToast } from '../context/ToastContext'
+import { useLang } from '../context/LanguageContext'
 import AttachmentCell from '../components/AttachmentCell'
 
 const STATUSES = ['Bekliyor', 'Ödendi', 'Gecikti']
@@ -24,6 +25,7 @@ export default function Invoices() {
   const [importResult, setImportResult] = useState(null)
   const fileRef = useRef(null)
   const toast = useToast()
+  const { t } = useLang()
 
   async function load() {
     setLoading(true)
@@ -34,7 +36,7 @@ export default function Invoices() {
     try {
       setInvoices(await getInvoices(params))
     } catch {
-      toast.error('Faturalar yüklenemedi — backend çalışıyor mu?')
+      toast.error(t('toast.loadFailed'))
     } finally {
       setLoading(false)
     }
@@ -42,18 +44,19 @@ export default function Invoices() {
 
   // Filtre/arama/sıralama değişince yeniden yükle (aramada 300ms bekle = daha az istek)
   useEffect(() => {
-    const t = setTimeout(load, 300)
-    return () => clearTimeout(t)
+    // Değişken adı "timer": "t" yazsaydık çeviri fonksiyonu t'yi gölgelerdi
+    const timer = setTimeout(load, 300)
+    return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, status, category, sort, order])
 
   async function handlePay(id, vendor) {
     try {
       await payInvoice(id)
-      toast.success(`${vendor} ödendi olarak işaretlendi`)
+      toast.success(t('toast.paid', { vendor }))
       load()
     } catch {
-      toast.error('Ödeme işlenemedi')
+      toast.error(t('toast.payFailed'))
     }
   }
 
@@ -69,7 +72,7 @@ export default function Invoices() {
     document.body.appendChild(a)
     a.click()
     a.remove()
-    toast.info(`${invoices.length} fatura Excel'e aktarılıyor…`)
+    toast.info(t('toast.exporting', { count: invoices.length }))
   }
 
   // Excel'den toplu yükle
@@ -83,14 +86,14 @@ export default function Invoices() {
       const result = await importInvoices(file)
       load()
       if (result.failed === 0) {
-        toast.success(`${result.imported} fatura içe aktarıldı`)
+        toast.success(t('toast.imported', { count: result.imported }))
       } else {
         // Hata varsa detaylı raporu aç (toast'a 20 satır sığmaz)
-        toast.info(`${result.imported} eklendi, ${result.failed} satır atlandı`)
+        toast.info(t('toast.importPartial', { imported: result.imported, failed: result.failed }))
         setImportResult(result)
       }
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Dosya içe aktarılamadı')
+      toast.error(err.response?.data?.detail || t('toast.importFailed'))
     } finally {
       setImporting(false)
     }
@@ -102,14 +105,14 @@ export default function Invoices() {
     try {
       const { created } = await generateRecurring()
       if (created > 0) {
-        toast.success(`${created} tekrar faturası oluşturuldu`)
+        toast.success(t('toast.recurringCreated', { count: created }))
         load()
       } else {
         // Kopya üretmediği için "hiçbir şey yapılmadı" da başarılı bir sonuçtur
-        toast.info('Oluşturulacak yeni tekrar yok — hepsi güncel')
+        toast.info(t('toast.recurringNone'))
       }
     } catch {
-      toast.error('Tekrarlar oluşturulamadı')
+      toast.error(t('toast.recurringFailed'))
     } finally {
       setGenerating(false)
     }
@@ -154,8 +157,8 @@ export default function Invoices() {
       {/* Başlık + Yeni Fatura */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-3xl font-semibold text-bark-900">Faturalar</h1>
-          <p className="text-sm text-bark-400">{invoices.length} kayıt</p>
+          <h1 className="font-serif text-3xl font-semibold text-bark-900">{t('invoices.title')}</h1>
+          <p className="text-sm text-bark-400">{t('invoices.count', { count: invoices.length })}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {/* Gizli dosya seçici — kendi butonumuzla tetikliyoruz */}
@@ -169,14 +172,14 @@ export default function Invoices() {
           <button
             onClick={() => fileRef.current?.click()}
             disabled={importing}
-            title="Doldurulmuş .xlsx dosyasından toplu fatura yükle"
+            title={t('invoices.importExcel')}
             className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50 px-4 py-2.5 text-sm font-medium text-bark-700 transition hover:bg-cream-200 disabled:opacity-60"
           >
-            <Upload size={18} /> {importing ? 'Yükleniyor…' : "Excel'den Yükle"}
+            <Upload size={18} /> {importing ? t('invoices.importing') : t('invoices.importExcel')}
           </button>
           <a
             href={templateUrl()}
-            title="Doğru sütunları içeren boş şablonu indir"
+            title={t('invoices.templateTitle')}
             className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50 px-3 py-2.5 text-sm font-medium text-bark-400 transition hover:bg-cream-200 hover:text-bark-700"
           >
             <FileDown size={18} />
@@ -184,22 +187,22 @@ export default function Invoices() {
           <button
             onClick={handleGenerate}
             disabled={generating}
-            title="Kira/abonelik gibi tekrarlayan faturaların yaklaşan dönemlerini oluşturur"
+            title={t('invoices.generateTitle')}
             className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50 px-4 py-2.5 text-sm font-medium text-bark-700 transition hover:bg-cream-200 disabled:opacity-60"
           >
-            <Repeat size={18} className={generating ? 'animate-spin' : ''} /> Tekrarları Oluştur
+            <Repeat size={18} className={generating ? 'animate-spin' : ''} /> {t('invoices.generateRecurring')}
           </button>
           <button
             onClick={handleExport}
             className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50 px-4 py-2.5 text-sm font-medium text-bark-700 transition hover:bg-cream-200"
           >
-            <Download size={18} /> Excel'e Aktar
+            <Download size={18} /> {t('invoices.exportExcel')}
           </button>
           <button
             onClick={() => setModalOpen(true)}
             className="flex items-center gap-2 rounded-xl bg-clay-500 px-4 py-2.5 text-sm font-medium text-cream-50 transition hover:bg-clay-600"
           >
-            <Plus size={18} /> Yeni Fatura
+            <Plus size={18} /> {t('invoices.new')}
           </button>
         </div>
       </div>
@@ -211,7 +214,7 @@ export default function Invoices() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tedarikçi ara..."
+            placeholder={t('invoices.searchPlaceholder')}
             className="w-full rounded-xl border border-cream-300 bg-cream-50 py-2 pl-10 pr-3 text-sm text-bark-900 outline-none placeholder:text-bark-400 focus:border-clay-400"
           />
         </div>
@@ -220,9 +223,10 @@ export default function Invoices() {
           onChange={(e) => setStatus(e.target.value)}
           className="rounded-xl border border-cream-300 bg-cream-50 px-3 py-2 text-sm text-bark-800 outline-none focus:border-clay-400"
         >
-          <option value="">Tüm durumlar</option>
+          <option value="">{t('invoices.allStatuses')}</option>
+          {/* value Türkçe kalır (backend'e o gider), sadece etiket çevrilir */}
           {STATUSES.map((s) => (
-            <option key={s}>{s}</option>
+            <option key={s} value={s}>{t(`status.${s}`)}</option>
           ))}
         </select>
         <select
@@ -230,9 +234,9 @@ export default function Invoices() {
           onChange={(e) => setCategory(e.target.value)}
           className="rounded-xl border border-cream-300 bg-cream-50 px-3 py-2 text-sm text-bark-800 outline-none focus:border-clay-400"
         >
-          <option value="">Tüm kategoriler</option>
+          <option value="">{t('invoices.allCategories')}</option>
           {CATEGORIES.map((c) => (
-            <option key={c}>{c}</option>
+            <option key={c} value={c}>{t(`category.${c}`)}</option>
           ))}
         </select>
       </div>
@@ -242,13 +246,13 @@ export default function Invoices() {
         <table className="w-full text-left text-sm">
           <thead className="border-b border-cream-300 bg-cream-100 text-xs uppercase tracking-wide text-bark-400">
             <tr>
-              <Th field="invoice_number">Fatura No</Th>
-              <Th field="vendor_name">Tedarikçi</Th>
-              <th className="px-4 py-3">Kategori</th>
-              <Th field="amount" align="right">Tutar</Th>
-              <Th field="due_date">Son Ödeme</Th>
-              <Th field="status">Durum</Th>
-              <th className="px-4 py-3 text-right">Ek</th>
+              <Th field="invoice_number">{t('invoices.columns.number')}</Th>
+              <Th field="vendor_name">{t('invoices.columns.vendor')}</Th>
+              <th className="px-4 py-3">{t('invoices.columns.category')}</th>
+              <Th field="amount" align="right">{t('invoices.columns.amount')}</Th>
+              <Th field="due_date">{t('invoices.columns.dueDate')}</Th>
+              <Th field="status">{t('invoices.columns.status')}</Th>
+              <th className="px-4 py-3 text-right">{t('invoices.columns.attachment')}</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -256,13 +260,13 @@ export default function Invoices() {
             {loading ? (
               <tr>
                 <td colSpan={8} className="px-4 py-10 text-center text-bark-400">
-                  Yükleniyor…
+                  {t('common.loading')}
                 </td>
               </tr>
             ) : invoices.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-4 py-10 text-center text-bark-400">
-                  Fatura bulunamadı. “Yeni Fatura” ile ekleyebilirsin.
+                  {t('invoices.empty')}
                 </td>
               </tr>
             ) : (
@@ -275,15 +279,14 @@ export default function Invoices() {
                         {inv.invoice_number}
                         {inv.recurrence && (
                           <span
-                            title={
-                              inv.recurrence_parent_id
-                                ? `${inv.recurrence} tekrar — otomatik oluşturuldu`
-                                : `${inv.recurrence} tekrarlayan (seri başı)`
-                            }
+                            title={t(
+                              inv.recurrence_parent_id ? 'recurrence.generated' : 'recurrence.seriesHead',
+                              { value: t(`recurrence.${inv.recurrence}`) },
+                            )}
                             className="inline-flex items-center gap-0.5 rounded-full bg-cream-200 px-1.5 py-0.5 text-[10px] font-medium text-bark-600"
                           >
                             <Repeat size={10} />
-                            {inv.recurrence}
+                            {t(`recurrence.${inv.recurrence}`)}
                           </span>
                         )}
                       </span>
@@ -291,7 +294,7 @@ export default function Invoices() {
                     <td className="px-4 py-3 text-bark-800">{inv.vendor_name}</td>
                     <td className="px-4 py-3">
                       <span className="rounded-full bg-cream-200 px-2.5 py-1 text-xs text-bark-700">
-                        {inv.category}
+                        {t(`category.${inv.category}`)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right font-medium text-bark-900">
@@ -308,7 +311,7 @@ export default function Invoices() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusBadge(inv.status)}`}>
-                        {inv.status}
+                        {t(`status.${inv.status}`)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -320,7 +323,7 @@ export default function Invoices() {
                           onClick={() => handlePay(inv.id, inv.vendor_name)}
                           className="inline-flex items-center gap-1 rounded-lg border border-paid-tx/30 px-2.5 py-1 text-xs font-medium text-paid-tx transition hover:bg-paid-bg"
                         >
-                          <Check size={14} /> Öde
+                          <Check size={14} /> {t('invoices.pay')}
                         </button>
                       )}
                     </td>

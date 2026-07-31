@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Paperclip, Upload, Download, X, Loader2 } from 'lucide-react'
 import { uploadAttachment, deleteAttachment, attachmentUrl } from '../api/invoices'
 import { useToast } from '../context/ToastContext'
+import { useLang } from '../context/LanguageContext'
 
 /*
   Tablodaki "Ek" sütunu.
@@ -16,6 +17,7 @@ export default function AttachmentCell({ invoice, onChanged }) {
   const inputRef = useRef(null)
   const [busy, setBusy] = useState(false)
   const toast = useToast()
+  const { t } = useLang()
 
   async function handleFile(e) {
     const file = e.target.files?.[0]
@@ -25,11 +27,11 @@ export default function AttachmentCell({ invoice, onChanged }) {
     setBusy(true)
     try {
       await uploadAttachment(invoice.id, file)
-      toast.success(`${file.name} yüklendi`)
+      toast.success(t('toast.fileUploaded', { name: file.name }))
       onChanged()
     } catch (err) {
       // Backend'in açıklayıcı mesajını (örn. "Sadece PDF...") kullanıcıya göster
-      toast.error(err.response?.data?.detail || 'Dosya yüklenemedi')
+      toast.error(err.response?.data?.detail || t('toast.fileUploadFailed'))
     } finally {
       setBusy(false)
     }
@@ -39,10 +41,10 @@ export default function AttachmentCell({ invoice, onChanged }) {
     setBusy(true)
     try {
       await deleteAttachment(invoice.id)
-      toast.success('Ek dosya kaldırıldı')
+      toast.success(t('toast.fileRemoved'))
       onChanged()
     } catch {
-      toast.error('Dosya kaldırılamadı')
+      toast.error(t('toast.fileRemoveFailed'))
     } finally {
       setBusy(false)
     }
@@ -63,7 +65,7 @@ export default function AttachmentCell({ invoice, onChanged }) {
         />
         <button
           onClick={() => inputRef.current?.click()}
-          title="Dekont/fatura yükle (PDF, JPG, PNG — en fazla 5 MB)"
+          title={t('attachment.upload')}
           className="rounded-lg p-1.5 text-bark-400 transition hover:bg-cream-200 hover:text-clay-600"
         >
           <Upload size={15} />
@@ -79,7 +81,7 @@ export default function AttachmentCell({ invoice, onChanged }) {
         href={attachmentUrl(invoice.id)}
         target="_blank"
         rel="noreferrer"
-        title={`İndir: ${invoice.attachment_name}`}
+        title={t('attachment.downloadTitle', { name: invoice.attachment_name })}
         className="inline-flex max-w-[130px] items-center gap-1 rounded-lg border border-cream-300 px-2 py-1 text-xs text-bark-700 transition hover:border-clay-400 hover:text-clay-600"
       >
         <Paperclip size={13} className="shrink-0" />
@@ -88,7 +90,7 @@ export default function AttachmentCell({ invoice, onChanged }) {
       </a>
       <button
         onClick={handleRemove}
-        title="Eki kaldır"
+        title={t('attachment.remove')}
         className="rounded-lg p-1 text-bark-400 transition hover:bg-overdue-bg hover:text-overdue-tx"
       >
         <X size={13} />
