@@ -35,6 +35,26 @@ class User(Base):
     invoices: Mapped[list["Invoice"]] = relationship(back_populates="user")
 
 
+class Budget(Base):
+    """
+    Kategori bazlı AYLIK bütçe (Ekstra Özellik #6).
+
+    Her kategori için en fazla bir bütçe olur -> category sütunu UNIQUE.
+    "Bu ay ne kadar harcandı" bilgisini burada TUTMUYORUZ; onu faturalardan
+    anlık hesaplıyoruz. (Türetilebilen veriyi saklamak = tutarsızlık kaynağı.)
+    """
+
+    __tablename__ = "budgets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    category: Mapped[str] = mapped_column(String(30), unique=True, index=True)
+    monthly_limit: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    currency: Mapped[str] = mapped_column(String(3), default="TRY")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class Invoice(Base):
     __tablename__ = "invoices"
 

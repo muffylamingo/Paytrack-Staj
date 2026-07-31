@@ -88,6 +88,31 @@ class GenerateResult(BaseModel):
     invoices: list["InvoiceOut"]      # üretilenlerin kendisi
 
 
+# --- Bütçe şemaları (Ekstra Özellik #6) ---
+class BudgetIn(BaseModel):
+    """PUT /budgets/{kategori} gövdesi — sadece limit gönderilir."""
+    monthly_limit: Decimal = Field(gt=0, description="Aylık bütçe limiti (0'dan büyük)")
+    currency: str = Field(default="TRY", max_length=3)
+
+
+class BudgetState(str, Enum):
+    """Bütçenin durumu — arayüzde renk seçmek için."""
+    ok = "İyi"          # %80'in altında
+    warning = "Uyarı"   # %80 - %100 arası
+    over = "Aşıldı"     # %100 üstü
+
+
+class BudgetStatus(BaseModel):
+    """GET /budgets cevabı — limit + bu ayki harcama + hesaplanmış oran."""
+    category: str
+    monthly_limit: Decimal
+    currency: str
+    spent: Decimal            # bu ay bu kategoride toplam (son ödeme tarihi bu ay olanlar)
+    remaining: Decimal        # limit - harcanan (negatif olabilir = aşım)
+    percent: int              # yüzde (yuvarlanmış)
+    state: BudgetState
+
+
 # --- Dashboard / İstatistik şemaları (Faz 5) ---
 class CategoryStat(BaseModel):
     category: str

@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Invoices from './pages/Invoices'
-import ComingSoon from './pages/ComingSoon'
+import Reports from './pages/Reports'
 
 function App() {
   return (
@@ -13,7 +13,7 @@ function App() {
           <Route path="/" element={<Navigate to="/panel" replace />} />
           <Route path="/panel" element={<Dashboard />} />
           <Route path="/faturalar" element={<Invoices />} />
-          <Route path="/raporlar" element={<ComingSoon title="Raporlar" />} />
+          <Route path="/raporlar" element={<Reports />} />
         </Route>
       </Routes>
     </BrowserRouter>

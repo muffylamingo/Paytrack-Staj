@@ -4,9 +4,12 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { AlertTriangle, CalendarClock, Wallet, TrendingUp, TrendingDown } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { getStats } from '../api/stats'
+import { getBudgets } from '../api/budgets'
 import { formatCurrency } from '../lib/format'
 import { useTheme } from '../context/ThemeContext'
+import BudgetBar from '../components/BudgetBar'
 
 /*
   Grafik renkleri neden burada (CSS'te değil)?
@@ -69,12 +72,15 @@ function KpiCard({ label, value, sub, icon: Icon, from, to }) {
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null)
+  const [budgets, setBudgets] = useState([])
   const [error, setError] = useState(false)
   const { isDark } = useTheme()
   const c = isDark ? CHART.dark : CHART.light   // aktif grafik paleti
 
   useEffect(() => {
     getStats().then(setStats).catch(() => setError(true))
+    // Bütçeler ayrı bir istek: gelmezse panel yine çalışsın (kritik veri değil)
+    getBudgets().then(setBudgets).catch(() => {})
   }, [])
 
   if (error)
@@ -144,6 +150,23 @@ export default function Dashboard() {
           to={c.kpi[2][1]}
         />
       </div>
+
+      {/* Bütçe durumu — sadece bütçe tanımlıysa görünür */}
+      {budgets.length > 0 && (
+        <div className="mb-6 rounded-2xl border border-cream-300 bg-cream-50 p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-medium text-bark-800">Bu Ayki Bütçe Durumu</h2>
+            <Link to="/raporlar" className="text-xs font-medium text-clay-600 hover:underline">
+              Bütçeleri düzenle →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {budgets.map((b) => (
+              <BudgetBar key={b.category} budget={b} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Grafikler */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">

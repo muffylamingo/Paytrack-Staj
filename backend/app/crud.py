@@ -206,6 +206,88 @@ def generate_recurring(db: Session) -> list[models.Invoice]:
     return created
 
 
+# ---------------------------------------------------------------
+# Bütçeler (Ekstra Özellik #6)
+# ---------------------------------------------------------------
+WARNING_AT = 80   # yüzde kaçtan sonra "Uyarı" sayılsın
+
+
+def upsert_budget(db: Session, category: str, data: schemas.BudgetIn) -> models.Budget:
+    """
+    Bütçeyi kaydeder: yoksa oluşturur, varsa günceller.
+    Bu kalıba "UPSERT" denir (UPDATE + INSERT). Kullanıcı açısından
+    "kaydet" tek bir işlemdir; ayrı ayrı POST/PUT uğraştırmayalım.
+    """
+    budget = db.scalar(select(models.Budget).where(models.Budget.category == category))
+    if budget:
+        budget.monthly_limit = data.monthly_limit
+        budget.currency = data.currency
+    else:
+        budget = models.Budget(
+            category=category, monthly_limit=data.monthly_limit, currency=data.currency
+        )
+        db.add(budget)
+    db.commit()
+    db.refresh(budget)
+    return budget
+
+
+def get_budget(db: Session, category: str) -> models.Budget | None:
+    return db.scalar(select(models.Budget).where(models.Budget.category == category))
+
+
+def delete_budget(db: Session, budget: models.Budget) -> None:
+    db.delete(budget)
+    db.commit()
+
+
+def get_budget_status(db: Session) -> list[dict]:
+    """
+    Her bütçe için BU AYKİ harcamayı hesaplayıp durumunu döndürür.
+
+    "Bu ay" tanımı: son ödeme tarihi bu ay olan faturalar
+    (dashboard'daki "Bu Ayın Harcaması" kartıyla AYNI kural — tutarlılık önemli).
+    """
+    today = date.today()
+    budgets = list(db.scalars(select(models.Budget).order_by(models.Budget.category)).all())
+    if not budgets:
+        return []
+
+    # Bu ayın harcamasını kategoriye göre topla (tek sorgu)
+    rows = db.execute(
+        select(models.Invoice.category, func.sum(models.Invoice.amount))
+        .where(
+            func.extract("year", models.Invoice.due_date) == today.year,
+            func.extract("month", models.Invoice.due_date) == today.month,
+        )
+        .group_by(models.Invoice.category)
+    ).all()
+    spent_by_cat = {category: total or Decimal("0") for category, total in rows}
+
+    result = []
+    for b in budgets:
+        spent = spent_by_cat.get(b.category, Decimal("0"))
+        percent = int(spent / b.monthly_limit * 100) if b.monthly_limit else 0
+        if percent > 100:
+            state = schemas.BudgetState.over
+        elif percent >= WARNING_AT:
+            state = schemas.BudgetState.warning
+        else:
+            state = schemas.BudgetState.ok
+        result.append(
+            {
+                "category": b.category,
+                "monthly_limit": b.monthly_limit,
+                "currency": b.currency,
+                "spent": spent,
+                "remaining": b.monthly_limit - spent,
+                "percent": percent,
+                "state": state,
+            }
+        )
+    return result
+
+
 def get_stats(db: Session) -> dict:
     """Dashboard için özet hesaplar (3 KPI + kategori dağılımı + 6 aylık trend)."""
     invoices = list(db.scalars(select(models.Invoice)).all())

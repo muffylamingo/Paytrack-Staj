@@ -544,4 +544,66 @@ muhasebede **kabul edilemez**. Biz `SET NULL` seçtik: bağ kopar, faturalar dur
 
 ---
 
+## 📖 Oturum 11 — Bütçe Uyarısı (Ekstra Özellik #6) 💰 ✅
+
+### Neler yaptık
+Her kategoriye **aylık bütçe limiti**. Harcama limite yaklaşınca sarı, aşınca kırmızı uyarı.
+**Raporlar sayfası artık boş değil** — bütçe yönetim ekranı oldu.
+
+| Katman | Dosya | Görevi |
+|---|---|---|
+| Model | `app/models.py` → `Budget` **(yeni tablo)** | kategori (UNIQUE) + aylık limit |
+| CRUD | `app/crud.py` | `upsert_budget`, `get_budget_status` |
+| Router | `app/routers/budgets.py` **(yeni)** | GET / PUT / DELETE `/budgets` |
+| Frontend | `pages/Reports.jsx` **(yeni)**, `components/BudgetBar.jsx` **(yeni)** | yönetim + doluluk çubukları |
+
+### 💡 Önemli tasarım kararı: "Harcanan"ı VERİTABANINDA TUTMADIK
+`budgets` tablosunda sadece **limit** var. "Bu ay ne kadar harcandı" bilgisi her istekte
+faturalardan **hesaplanıyor**.
+**Neden?** Türetilebilen (hesaplanabilen) veriyi ayrıca saklarsan, fatura silindiğinde/değiştiğinde
+o sayıyı güncellemeyi unutursun → **tutarsız veri**. Tek doğru kaynak (single source of truth)
+faturalar olmalı. 🔎 *"denormalization vs single source of truth"*
+
+### Çalışman gereken konular
+1. **UPSERT kalıbı:** "Varsa güncelle, yoksa oluştur". Kullanıcı için tek bir "Kaydet" düğmesi;
+   arkada `SELECT` → varsa `UPDATE`, yoksa `INSERT`. Bu yüzden POST değil **PUT** kullandık
+   (PUT idempotenttir: aynı isteği 10 kez atsan sonuç aynı). 🔎 *"http put vs post idempotent"*
+2. **UNIQUE kısıtı:** `category` sütunu unique → aynı kategoriye iki bütçe **veritabanı seviyesinde**
+   imkânsız. Sadece koda güvenme, veritabanına da kural koy. 🔎 *"sql unique constraint"*
+3. **`GROUP BY` + `SUM()`:** Kategori bazlı toplamı **tek sorguda** aldık (her kategori için ayrı
+   sorgu atmak = "N+1 problemi"). 🔎 *"sql group by having"*, *"n+1 query problem"*
+4. **Enum'u yol parametresinde kullanmak:** `category: schemas.Category` yazınca FastAPI hatalı
+   kategoriyi otomatik **422** ile reddediyor — kendi if'ini yazmana gerek yok.
+5. **URL kodlaması:** "Yazılım" gibi Türkçe karakterli değerler URL'e doğrudan konamaz;
+   `encodeURIComponent` ile `Yaz%C4%B1l%C4%B1m` olur. 🔎 *"url encoding percent encoding"*
+6. **Bileşeni paylaşmak:** `BudgetBar` hem panelde hem Raporlar'da kullanılıyor — bir kez yaz, iki
+   yerde kullan (React'in en büyük faydası).
+
+### 🐞 Bulduğumuz GERÇEK hata: `transition-all` + CSS değişkeni
+Bütçe çubuklarında `transition-all` vardı (genişlik animasyonu için). Ama tema değiştirince
+**çubuk rengi eski temada takılı kaldı** — değişken `#7A8B5A`'ya dönmüştü, çubuk hâlâ `#9DB47A`.
+
+**Sebep:** Değeri bir `var()`'dan gelen bir özelliği `transition`'a sokarsan, tarayıcı (Chromium)
+değişken değişince rengi yeniden hesaplamıyor.
+
+**Çözüm:** `transition-all` → `transition-[width]` (zaten sadece genişliği animasyonlamak istiyorduk).
+Aynı hatayı `index.css`'te `body`'de de bulduk (`transition: background-color`) ve kaldırdık.
+
+> 📌 **KURAL:** Tema değişkenlerinden beslenen özellikleri **animasyonlama**.
+> Bonus: `transition-all` zaten kötü bir alışkanlık — istemediğin özellikleri de animasyonlar,
+> performansı düşürür. Neyi animasyonladığını **açıkça yaz**. 🔎 *"why avoid transition all css"*
+
+### 🧪 Test ettiklerimiz
+Üç durum da (İyi %59 · Uyarı %90 · Aşıldı %104) ✅ · UPSERT (tekrar PUT → kopya değil, güncelleme) ✅ ·
+geçersiz kategori **422** ✅ · limit 0 / negatif **422** ✅ · DELETE **204**, tekrar DELETE **404** ✅ ·
+arayüzde kaydetme + canlı uyarı güncellemesi ✅ · her iki temada renkler ✅
+
+### 🎤 Sunumda söyleyebileceğin cümle
+> *"Kategori bazlı aylık bütçe takibi ekledim. Bütçe tablosunda sadece limiti tutuyorum; harcamayı
+> faturalardan tek bir GROUP BY sorgusuyla anlık hesaplıyorum — böylece veri tutarsızlığı riski yok.
+> Kaydetme uç noktasını PUT/upsert olarak tasarladım, kategori benzersizliğini de veritabanı
+> seviyesinde UNIQUE kısıtıyla garantiledim."*
+
+---
+
 <!-- Sonraki oturumların notları buraya eklenecek -->
