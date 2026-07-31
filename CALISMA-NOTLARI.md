@@ -698,4 +698,66 @@ Böylece renkler geçişler kapalıyken anında uygulanıyor, **hover animasyonl
 
 ---
 
+## 📖 Oturum 13 — Çoklu Para Birimi + Kur (Ekstra #8) 💱 ✅
+
+### Neler yaptık
+Bu özellik projedeki **bilinen bir HATAYI** düzeltti: USD faturalar TL'ymiş gibi toplanıyordu.
+**210 USD, 210 TL sayılıyordu** — yani gösterge panelindeki bütün rakamlar teknik olarak yanlıştı.
+
+| Katman | Dosya | Görevi |
+|---|---|---|
+| Model | `models.ExchangeRate` **(yeni tablo)** | 1 birim yabancı para kaç TL? |
+| CRUD | `crud.py` | `get_rates_map`, `to_try`, `attach_try_amounts` |
+| Router | `routers/rates.py` **(yeni)** | GET/PUT `/rates` |
+| Frontend | `api/rates.js`, `Reports.jsx`, `Invoices.jsx` | kur düzenleme + "≈ TL" gösterimi |
+
+### 💡 En önemli tasarım kararı: TL karşılığını SAKLAMADIK
+Faturada tutar **kendi para biriminde** durur (asıl gerçek budur). TL karşılığı **her zaman anlık
+hesaplanır**.
+**Neden saklamayalım?** Kur yarın değişir; sakladığın TL değeri o gün yanlış olur. Sonra "hangi kurla
+hesaplanmıştı?" diye bir sürü karmaşa çıkar.
+> Bu, bütçelerdeki *"harcananı saklama, hesapla"* kararıyla **aynı ilke**: türetilebilen veriyi saklama.
+> (Gerçek muhasebe sistemlerinde fatura tarihindeki kur ayrıca kaydedilir — ama bu, projemizin
+> kapsamının ötesinde bir ayrıntı.)
+
+### Çalışman gereken konular
+1. **Para birimi dönüşümü:** Her şeyi tek bir "ana para birimine" (burada TL) çevirip öyle topla.
+   Farklı para birimlerini asla doğrudan toplama! 🔎 *"multi currency accounting base currency"*
+2. **`Decimal.quantize` + `ROUND_HALF_UP`:** Kur 4 ondalıklı olduğu için çarpım `114950.0000`
+   üretiyordu. Para **2 ondalık** olmalı → her faturayı ayrı ayrı kuruşa yuvarlayıp topladık
+   (muhasebede standart). 🔎 *"decimal quantize rounding python"*, *"floating point money hatası"*
+3. **Varsayılan + üzerine yazma (override) kalıbı:** Kullanıcı kur girmediyse `DEFAULT_RATES`
+   kullanılıyor ve arayüzde **"varsayılan" rozeti** çıkıyor — kimse bunu gerçek kur sanmasın.
+4. **`Promise.all`:** Raporlar sayfasında bütçe + kur isteklerini **paralel** attık. Sırayla
+   beklemek boşuna yavaşlık olurdu. 🔎 *"javascript promise all"*
+5. **Pydantic'e hesaplanmış alan eklemek:** `amount_try` veritabanında yok; ORM nesnesine geçici
+   olarak atanıp `from_attributes` sayesinde cevaba dahil ediliyor.
+6. **SQL'de yapılamayan hesap:** Bütçe harcamasını eskiden `GROUP BY` ile SQL'de topluyorduk. Artık
+   kurlar Python tarafında olduğu için o ayın faturalarını çekip Python'da topluyoruz. **Ders:**
+   her hesap SQL'e sığmaz; ama "az kayıt" olduğundan emin ol (burada: bir ayın faturaları).
+
+### 🐞 Kaçırmadığımız bir tutarlılık tuzağı
+"Bugün ödenecek" hatırlatıcısında tutarlar TL'ye çevrilmiş olsaydı, yanında **kendi para birimi**
+yazdığı için "8.400 USD" gibi saçma bir şey görünecekti. Orada faturanın **kendi tutarını** bıraktık.
+> Ders: Bir şeyi çevirirken, o değerin **yanındaki etiketin** hâlâ doğru olup olmadığına bak.
+
+### 🧪 Test ettiklerimiz
+Varsayılan kurlar + "varsayılan" rozeti ✅ · kur kaydetme (UPSERT) ✅ · kur değişince tüm TL
+karşılıkları ve raporlar canlı güncellendi ✅ (1 USD = 50 ₺ iken 210 $ → 10.500 ₺) ·
+TRY kuru değiştirme **400** ✅ · negatif kur **422** ✅ · tanımsız para birimi (GBP) **422** ✅ ·
+Excel'e "TL Karşılığı" sütunu ✅ · 2 ondalık yuvarlama ✅
+
+### ⚠️ Bilinen sınırlama (sunumda sorulursa dürüstçe söyle)
+**Tutara göre sıralama hâlâ ham tutarı kullanıyor** (SQL'de yapıldığı için). Yani 1.250 USD
+(≈53.000 TL) bir fatura, 25.000 TL'lik bir faturanın altında görünebilir. TL karşılığına göre
+sıralamak istersek sıralamayı Python tarafına almamız gerekir.
+
+### 🎤 Sunumda söyleyebileceğin cümle
+> *"Çoklu para birimi desteği ekledim. Fatura tutarını kendi para biriminde saklıyorum, TL karşılığını
+> düzenlenebilir kur tablosundan anlık hesaplıyorum — böylece kur değiştiğinde geçmiş veriler
+> bozulmuyor. Bu özellik aynı zamanda mevcut bir hatayı düzeltti: öncesinde farklı para birimleri
+> doğrudan toplanıyordu, dolayısıyla rapor rakamları yanlıştı."*
+
+---
+
 <!-- Sonraki oturumların notları buraya eklenecek -->

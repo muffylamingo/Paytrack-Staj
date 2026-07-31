@@ -122,7 +122,7 @@ değiliz — bunlar bir **menü**. Roadmap'in sonunda birlikte seçeceğiz. "Etk
 | 5 | **Tekrarlayan Faturalar** | Kira/abonelik gibi her ay otomatik oluşan faturalar. **Çok "iş mantığı" gösterir.** | ⭐⭐⭐⭐ | 🟡 Orta | ✅ **YAPILDI** |
 | 6 | **Bütçe Uyarısı** | Kategoriye aylık bütçe koy, aşılınca uyar (örn. "Yazılım bütçesi doldu"). | ⭐⭐⭐ | 🟡 Orta | ✅ **YAPILDI** |
 | 7 | **Excel'den İçe Aktarma** | Export'un tersi: Excel dosyasından toplu fatura yükleme. | ⭐⭐⭐ | 🟡 Orta | ✅ **YAPILDI** |
-| 8 | **Çoklu Para Birimi + Kur** | USD/EUR faturaları TL karşılığıyla göster (sabit veya canlı kur). | ⭐⭐⭐ | 🟡 Orta | Opsiyonel |
+| 8 | **Çoklu Para Birimi + Kur** | USD/EUR faturaları TL karşılığıyla göster (sabit veya canlı kur). | ⭐⭐⭐ | 🟡 Orta | ✅ **YAPILDI** |
 | 9 | **İşlem Geçmişi (Audit Log)** | "Kim, ne zaman, neyi değiştirdi" kaydı. Kurumsal ciddiyet katar. | ⭐⭐⭐ | 🟠 Zor | Opsiyonel |
 | 10 | **Ödeme Takvimi Görünümü** | Faturaları takvim üzerinde göster (hangi gün ne ödenecek). | ⭐⭐ | 🟠 Zor | Opsiyonel |
 | 11 | **Çoklu Dil (TR/EN)** | Arayüzü İngilizce/Türkçe değiştirme. | ⭐⭐ | 🟡 Orta | Opsiyonel |

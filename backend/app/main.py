@@ -11,7 +11,7 @@ Sunucuyu şu komutla çalıştırırız:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import budgets, invoices, stats
+from app.routers import budgets, invoices, rates, stats
 
 app = FastAPI(
     title="PayTrack API",
@@ -42,3 +42,5 @@ app.include_router(invoices.router)
 app.include_router(stats.router)
 # Kategori bazlı aylık bütçeler (GET/PUT/DELETE /budgets)
 app.include_router(budgets.router)
+# Döviz kurları (GET/PUT /rates)
+app.include_router(rates.router)

@@ -5,7 +5,7 @@ crud.py — Veritabanı işlemleri (Create-Read-Update-Delete + istatistik).
 """
 import calendar
 from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -206,6 +206,83 @@ def generate_recurring(db: Session) -> list[models.Invoice]:
     return created
 
 
+# ---------------------------------------------------------------
+# Döviz kurları (Ekstra Özellik #8)
+# ---------------------------------------------------------------
+# Kullanıcı henüz kur girmediyse kullanılacak başlangıç değerleri.
+# Arayüzde "varsayılan" olarak işaretlenir ki kimse bunları gerçek kur sanmasın.
+DEFAULT_RATES: dict[str, Decimal] = {
+    "TRY": Decimal("1"),
+    "USD": Decimal("40.00"),
+    "EUR": Decimal("43.00"),
+}
+
+
+def get_rates_map(db: Session) -> dict[str, Decimal]:
+    """{'TRY': 1, 'USD': 40.00, ...} — veritabanındaki kurlar varsayılanların üzerine yazar."""
+    rates = dict(DEFAULT_RATES)
+    for row in db.scalars(select(models.ExchangeRate)).all():
+        rates[row.currency] = row.rate
+    rates["TRY"] = Decimal("1")  # TL'nin TL karşılığı her zaman 1
+    return rates
+
+
+def list_rates(db: Session) -> list[dict]:
+    """Arayüzün göstereceği kur listesi (TRY hariç — onu düzenlemenin anlamı yok)."""
+    kayitli = {r.currency: r for r in db.scalars(select(models.ExchangeRate)).all()}
+    sonuc = []
+    for currency, varsayilan in DEFAULT_RATES.items():
+        if currency == "TRY":
+            continue
+        row = kayitli.get(currency)
+        sonuc.append(
+            {
+                "currency": currency,
+                "rate": row.rate if row else varsayilan,
+                "is_default": row is None,
+                "updated_at": row.updated_at if row else None,
+            }
+        )
+    return sonuc
+
+
+def upsert_rate(db: Session, currency: str, rate: Decimal) -> models.ExchangeRate:
+    """Kuru kaydeder/günceller (bütçelerdeki gibi UPSERT kalıbı)."""
+    row = db.scalar(select(models.ExchangeRate).where(models.ExchangeRate.currency == currency))
+    if row:
+        row.rate = rate
+    else:
+        row = models.ExchangeRate(currency=currency, rate=rate)
+        db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def to_try(amount: Decimal, currency: str, rates: dict[str, Decimal]) -> Decimal:
+    """
+    Tutarı TL'ye çevirir. Kuru bilinmeyen para birimi 1 kabul edilir (veri bozulmasın).
+
+    quantize(0.01): kur 4 ondalıklı olduğu için çarpım 4 ondalık üretiyordu
+    (114950.0000). Para her zaman 2 ondalık olmalı — her faturayı ayrı ayrı
+    kuruşa yuvarlayıp öyle topluyoruz (muhasebede standart yaklaşım).
+    ROUND_HALF_UP = 0.005 yukarı yuvarlanır (bankacılıkta beklenen davranış).
+    """
+    kur = rates.get(currency, Decimal("1"))
+    return ((amount or Decimal("0")) * kur).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def attach_try_amounts(db: Session, invoices: list[models.Invoice]) -> list[models.Invoice]:
+    """
+    Her faturaya geçici bir `amount_try` özelliği ekler (veritabanına yazılmaz).
+    Pydantic `from_attributes` sayesinde bu değer cevaba dahil olur.
+    """
+    rates = get_rates_map(db)
+    for inv in invoices:
+        inv.amount_try = to_try(inv.amount, inv.currency, rates)
+    return invoices
+
+
 def existing_invoice_numbers(db: Session) -> set[str]:
     """Veritabanındaki tüm fatura numaraları (içe aktarmada kopya kontrolü için)."""
     return set(db.scalars(select(models.Invoice.invoice_number)).all())
@@ -269,16 +346,22 @@ def get_budget_status(db: Session) -> list[dict]:
     if not budgets:
         return []
 
-    # Bu ayın harcamasını kategoriye göre topla (tek sorgu)
-    rows = db.execute(
-        select(models.Invoice.category, func.sum(models.Invoice.amount))
-        .where(
+    # Bu ayın harcamasını kategoriye göre topla.
+    # NOT: Artık SQL'de GROUP BY ile toplamıyoruz; çünkü farklı para birimlerini
+    # önce TL'ye çevirmemiz gerekiyor (kurlar Python tarafında). Bu yüzden bu ayın
+    # faturalarını çekip Python'da topluyoruz — ay bazında az kayıt olduğu için sorun değil.
+    rates = get_rates_map(db)
+    ay_faturalari = db.scalars(
+        select(models.Invoice).where(
             func.extract("year", models.Invoice.due_date) == today.year,
             func.extract("month", models.Invoice.due_date) == today.month,
         )
-        .group_by(models.Invoice.category)
     ).all()
-    spent_by_cat = {category: total or Decimal("0") for category, total in rows}
+    spent_by_cat: dict[str, Decimal] = {}
+    for inv in ay_faturalari:
+        spent_by_cat[inv.category] = spent_by_cat.get(inv.category, Decimal("0")) + to_try(
+            inv.amount, inv.currency, rates
+        )
 
     result = []
     for b in budgets:
@@ -305,8 +388,14 @@ def get_budget_status(db: Session) -> list[dict]:
 
 
 def get_stats(db: Session) -> dict:
-    """Dashboard için özet hesaplar (3 KPI + kategori dağılımı + 6 aylık trend)."""
+    """
+    Dashboard için özet hesaplar (3 KPI + kategori dağılımı + 6 aylık trend).
+
+    TÜM tutarlar TL'ye çevrilerek toplanır. (Ekstra #8 öncesinde USD faturalar
+    TL'ymiş gibi toplanıyordu — 210 USD, 210 TL sayılıyordu. Artık düzeltildi.)
+    """
     invoices = list(db.scalars(select(models.Invoice)).all())
+    rates = get_rates_map(db)
     today = date.today()
     week_later = today + timedelta(days=7)
 
@@ -320,7 +409,8 @@ def get_stats(db: Session) -> dict:
     monthly: dict[str, Decimal] = {}
 
     for inv in invoices:
-        amt = inv.amount or Decimal("0")
+        # Artık ham tutar değil, TL karşılığı toplanıyor
+        amt = to_try(inv.amount, inv.currency, rates)
 
         # Kategori dağılımı (pasta grafik)
         by_cat[inv.category] = by_cat.get(inv.category, Decimal("0")) + amt
@@ -339,7 +429,11 @@ def get_stats(db: Session) -> dict:
             # Son ödeme tarihi TAM BUGÜN olanlar (hatırlatıcı için)
             if inv.due_date == today:
                 due_today.append(
-                    {"id": inv.id, "vendor_name": inv.vendor_name, "amount": amt, "currency": inv.currency}
+                    # DİKKAT: burada TL'ye çevrilmiş "amt" DEĞİL, faturanın KENDİ tutarı
+                    # kullanılıyor — yanında kendi para birimi yazacağı için
+                    # ("210 USD" olmalı, "8.400 USD" değil).
+                    {"id": inv.id, "vendor_name": inv.vendor_name,
+                     "amount": inv.amount or Decimal("0"), "currency": inv.currency}
                 )
 
         # Bu ayın toplamı (son ödeme tarihi bu ay olanlar)

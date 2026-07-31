@@ -57,7 +57,9 @@ def list_invoices(
     db: Session = Depends(get_db),
 ):
     """Faturaları listeler. Filtreler: ?status= ?category= ?vendor= · Sıralama: ?sort= ?order="""
-    return crud.get_invoices(db, status=status, category=category, vendor=vendor, sort=sort, order=order)
+    invoices = crud.get_invoices(db, status=status, category=category, vendor=vendor, sort=sort, order=order)
+    # Her faturaya güncel kurla TL karşılığını ekle (Ekstra #8)
+    return crud.attach_try_amounts(db, invoices)
 
 
 # NOT: Bu route, aşağıdaki /{invoice_id} route'undan ÖNCE tanımlanmalı
@@ -80,11 +82,13 @@ def export_invoices(
     ws = wb.active
     ws.title = "Faturalar"
 
-    headers = ["Fatura No", "Tedarikçi", "Kategori", "Tutar", "Döviz", "Son Ödeme", "Durum", "Not"]
+    headers = ["Fatura No", "Tedarikçi", "Kategori", "Tutar", "Döviz", "TL Karşılığı",
+               "Son Ödeme", "Durum", "Not"]
     ws.append(headers)
     for cell in ws[1]:
         cell.font = Font(bold=True)  # başlık satırını kalın yap
 
+    rates = crud.get_rates_map(db)   # TL karşılığı için güncel kurlar
     for inv in invoices:
         ws.append([
             inv.invoice_number,
@@ -92,13 +96,14 @@ def export_invoices(
             inv.category,
             float(inv.amount),
             inv.currency,
+            float(crud.to_try(inv.amount, inv.currency, rates)),
             inv.due_date.isoformat(),
             inv.status,
             inv.notes or "",
         ])
 
     # Kolon genişlikleri (okunabilirlik)
-    for i, width in enumerate([16, 22, 12, 12, 8, 14, 12, 30], start=1):
+    for i, width in enumerate([16, 22, 12, 12, 8, 14, 14, 12, 30], start=1):
         ws.column_dimensions[get_column_letter(i)].width = width
 
     buffer = io.BytesIO()

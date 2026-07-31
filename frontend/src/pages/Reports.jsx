@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Wallet, Trash2, Check } from 'lucide-react'
+import { Wallet, Trash2, Check, ArrowLeftRight } from 'lucide-react'
 import { getBudgets, setBudget, deleteBudget } from '../api/budgets'
+import { getRates, setRate } from '../api/rates'
 import { useToast } from '../context/ToastContext'
 import BudgetBar from '../components/BudgetBar'
 
@@ -12,19 +13,39 @@ export default function Reports() {
   const [loading, setLoading] = useState(true)
   const [drafts, setDrafts] = useState({})   // kategori -> input'a yazılan değer
   const [savingCat, setSavingCat] = useState(null)
+  const [rates, setRates] = useState([])
+  const [rateDrafts, setRateDrafts] = useState({})
   const toast = useToast()
 
   async function load() {
     setLoading(true)
     try {
-      const data = await getBudgets()
-      setBudgets(data)
+      // İki isteği PARALEL at (Promise.all) — sırayla beklemek gereksiz yavaşlık olurdu
+      const [budgetData, rateData] = await Promise.all([getBudgets(), getRates()])
+      setBudgets(budgetData)
+      setRates(rateData)
       // Var olan limitleri input'lara doldur
-      setDrafts(Object.fromEntries(data.map((b) => [b.category, String(Number(b.monthly_limit))])))
+      setDrafts(Object.fromEntries(budgetData.map((b) => [b.category, String(Number(b.monthly_limit))])))
+      setRateDrafts(Object.fromEntries(rateData.map((r) => [r.currency, String(Number(r.rate))])))
     } catch {
-      toast.error('Bütçeler yüklenemedi')
+      toast.error('Veriler yüklenemedi')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleSaveRate(currency) {
+    const value = rateDrafts[currency]
+    if (!value || Number(value) <= 0) {
+      toast.error("Kur 0'dan büyük olmalı")
+      return
+    }
+    try {
+      await setRate(currency, value)
+      toast.success(`1 ${currency} = ${Number(value).toLocaleString('tr-TR')} ₺ olarak kaydedildi`)
+      load()
+    } catch {
+      toast.error('Kur kaydedilemedi')
     }
   }
 
@@ -68,7 +89,7 @@ export default function Reports() {
     <div>
       <div className="mb-6">
         <h1 className="font-serif text-3xl font-semibold text-bark-900">Raporlar</h1>
-        <p className="text-sm text-bark-400">Kategori bazlı aylık bütçeler ve doluluk durumu</p>
+        <p className="text-sm text-bark-400">Kategori bazlı aylık bütçeler, doluluk durumu ve döviz kurları</p>
       </div>
 
       {/* Aşım varsa tepede toplu uyarı */}
@@ -129,8 +150,52 @@ export default function Reports() {
             </div>
             <p className="mt-4 text-xs text-bark-400">
               💡 Harcama, <b>son ödeme tarihi bu ay olan</b> faturalar üzerinden hesaplanır —
-              gösterge panelindeki “Bu Ayın Harcaması” ile aynı kural.
+              gösterge panelindeki “Bu Ayın Harcaması” ile aynı kural. Yabancı para faturalar
+              aşağıdaki kurla TL'ye çevrilir.
             </p>
+
+            {/* --- Döviz kurları (Ekstra #8) --- */}
+            <div className="mt-5 border-t border-cream-300 pt-5">
+              <h2 className="mb-3 flex items-center gap-2 font-medium text-bark-800">
+                <ArrowLeftRight size={18} /> Döviz Kurları
+              </h2>
+              <div className="space-y-3">
+                {rates.map((r) => (
+                  <div key={r.currency} className="flex items-center gap-2">
+                    <span className="w-20 shrink-0 text-sm text-bark-700">1 {r.currency}</span>
+                    <span className="text-sm text-bark-400">=</span>
+                    <div className="relative flex-1">
+                      <input
+                        type="number"
+                        min="0.0001"
+                        step="0.0001"
+                        value={rateDrafts[r.currency] ?? ''}
+                        onChange={(e) => setRateDrafts({ ...rateDrafts, [r.currency]: e.target.value })}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSaveRate(r.currency)}
+                        className="w-full rounded-xl border border-cream-300 bg-cream-100 py-2 pl-3 pr-8 text-sm text-bark-900 outline-none focus:border-clay-400"
+                      />
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-bark-400">₺</span>
+                    </div>
+                    {r.is_default && (
+                      <span className="shrink-0 rounded-full bg-pending-bg px-2 py-0.5 text-[10px] font-medium text-pending-tx">
+                        varsayılan
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleSaveRate(r.currency)}
+                      title="Kuru kaydet"
+                      className="rounded-lg bg-clay-500 p-2 text-cream-50 transition hover:bg-clay-600"
+                    >
+                      <Check size={15} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-bark-400">
+                💡 Fatura tutarları <b>kendi para biriminde</b> saklanır; TL karşılığı her zaman
+                güncel kurla anlık hesaplanır. Kuru değiştirince tüm raporlar birlikte güncellenir.
+              </p>
+            </div>
           </div>
 
           {/* SAĞ: Doluluk durumu */}

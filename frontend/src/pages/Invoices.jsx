@@ -296,6 +296,12 @@ export default function Invoices() {
                     </td>
                     <td className="px-4 py-3 text-right font-medium text-bark-900">
                       {formatCurrency(inv.amount, inv.currency)}
+                      {/* Yabancı para ise güncel kurla TL karşılığını da göster */}
+                      {inv.currency !== 'TRY' && inv.amount_try != null && (
+                        <div className="text-xs font-normal text-bark-400">
+                          ≈ {formatCurrency(inv.amount_try, 'TRY')}
+                        </div>
+                      )}
                     </td>
                     <td className={`px-4 py-3 ${near ? 'font-medium text-overdue-tx' : 'text-bark-600'}`}>
                       {formatDate(inv.due_date)}

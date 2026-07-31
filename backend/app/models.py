@@ -35,6 +35,28 @@ class User(Base):
     invoices: Mapped[list["Invoice"]] = relationship(back_populates="user")
 
 
+class ExchangeRate(Base):
+    """
+    Döviz kuru (Ekstra Özellik #8): 1 birim yabancı para kaç TL?
+
+    Neden tabloda? Kur değişkendir ve kullanıcı güncelleyebilmeli.
+    Kodun içine yazsaydık her değişiklikte yeniden dağıtım (deploy) gerekirdi.
+
+    NOT: Tutarlar faturada KENDİ para biriminde saklanır (asıl gerçek budur);
+    TL karşılığı her zaman anlık hesaplanır. Faturaya "TL karşılığı" sütunu
+    eklemedik, çünkü kur değişince o değer yanlış kalırdı.
+    """
+
+    __tablename__ = "exchange_rates"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    currency: Mapped[str] = mapped_column(String(3), unique=True, index=True)
+    rate: Mapped[Decimal] = mapped_column(Numeric(12, 4))  # 1 <currency> = kaç TRY
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 class Budget(Base):
     """
     Kategori bazlı AYLIK bütçe (Ekstra Özellik #6).

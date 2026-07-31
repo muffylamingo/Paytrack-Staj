@@ -80,12 +80,33 @@ class InvoiceOut(InvoiceBase):
     attachment_name: str | None = None
     # Doluysa: bu fatura sistemin ürettiği bir tekrar (arayüzde "otomatik" rozeti için)
     recurrence_parent_id: int | None = None
+    # Güncel kurla hesaplanmış TL karşılığı (veritabanında SAKLANMAZ, anlık hesaplanır).
+    # TRY faturalarda tutarın kendisine eşittir.
+    amount_try: Decimal | None = None
 
 
 # POST /invoices/generate-recurring cevabı
 class GenerateResult(BaseModel):
     created: int                      # kaç yeni fatura üretildi
     invoices: list["InvoiceOut"]      # üretilenlerin kendisi
+
+
+# --- Döviz kuru şemaları (Ekstra Özellik #8) ---
+class Currency(str, Enum):
+    try_ = "TRY"
+    usd = "USD"
+    eur = "EUR"
+
+
+class ExchangeRateIn(BaseModel):
+    rate: Decimal = Field(gt=0, description="1 birim yabancı para kaç TL?")
+
+
+class ExchangeRateOut(BaseModel):
+    currency: str
+    rate: Decimal
+    is_default: bool          # True = henüz kaydedilmemiş, varsayılan değer kullanılıyor
+    updated_at: datetime | None = None
 
 
 # --- Excel içe aktarma şemaları (Ekstra Özellik #7) ---
