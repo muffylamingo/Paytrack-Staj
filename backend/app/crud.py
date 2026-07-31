@@ -3,10 +3,11 @@ crud.py — Veritabanı işlemleri (Create-Read-Update-Delete + istatistik).
 
 "Katmanlı mimari": router'lar sadece HTTP ile ilgilenir, asıl veritabanı işini bu katman yapar.
 """
+import calendar
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app import models, schemas, storage
@@ -104,6 +105,105 @@ def clear_attachment(db: Session, invoice: models.Invoice) -> models.Invoice:
     db.commit()
     db.refresh(invoice)
     return invoice
+
+
+# ---------------------------------------------------------------
+# Tekrarlayan faturalar (Ekstra Özellik #5)
+# ---------------------------------------------------------------
+RECURRENCE_MONTHS = {"Aylık": 1, "3 Aylık": 3, "Yıllık": 12}
+LOOKAHEAD_DAYS = 30    # bugünden bu kadar ileriye kadar olan tekrarları üret
+MAX_PER_SERIES = 12    # emniyet freni: tek çalıştırmada bir seriden en fazla bu kadar ÜRET
+MAX_STEPS = 240        # emniyet freni: sonsuz döngüye karşı en fazla bu kadar ay ilerle
+
+
+def add_months(d: date, months: int) -> date:
+    """
+    Tarihe ay ekler. Ay sonu taşmasını da halleder:
+    31 Ocak + 1 ay = 28 Şubat (31 Şubat diye bir gün yok!).
+    Bu yüzden basitçe "ay += 1" YAZILAMAZ.
+    """
+    total = d.month - 1 + months
+    year = d.year + total // 12
+    month = total % 12 + 1
+    last_day = calendar.monthrange(year, month)[1]   # o ayın kaç gün çektiği
+    return date(year, month, min(d.day, last_day))
+
+
+def generate_recurring(db: Session) -> list[models.Invoice]:
+    """
+    Tekrarlayan faturaların eksik olan tekrarlarını üretir.
+
+    Nasıl çalışır?
+      1. "Seri başı" faturaları bul (recurrence dolu, recurrence_parent_id boş)
+      2. O serideki EN SON son-ödeme tarihini bul
+      3. Bu tarih ufkun (bugün + 30 gün) gerisindeyse, bir sonraki tekrarı üret
+      4. Ufka yetişene kadar tekrarla
+
+    İDEMPOTENT: İkinci kez çalıştırılırsa hiçbir şey üretmez, çünkü serinin son
+    tarihi artık ufkun ötesindedir. (Bu çok önemli — yoksa her tıklamada kopya çıkar.)
+    """
+    today = date.today()
+    horizon = today + timedelta(days=LOOKAHEAD_DAYS)
+    created: list[models.Invoice] = []
+
+    heads = db.scalars(
+        select(models.Invoice).where(
+            models.Invoice.recurrence.is_not(None),
+            models.Invoice.recurrence_parent_id.is_(None),
+        )
+    ).all()
+
+    for head in heads:
+        step = RECURRENCE_MONTHS.get(head.recurrence or "")
+        if not step:
+            continue  # tanınmayan sıklık -> atla
+
+        # Seride (baş + çocukları) şu ana kadarki en ileri tarih
+        last_due = db.scalar(
+            select(func.max(models.Invoice.due_date)).where(
+                or_(
+                    models.Invoice.id == head.id,
+                    models.Invoice.recurrence_parent_id == head.id,
+                )
+            )
+        )
+
+        cursor = last_due
+        made = 0
+        steps = 0
+        while cursor <= horizon and made < MAX_PER_SERIES and steps < MAX_STEPS:
+            steps += 1
+            next_due = add_months(cursor, step)
+            cursor = next_due
+            if next_due > horizon:
+                break
+            # GEÇMİŞ dönemleri ATLA: hiç oluşturulmamış eski aylar için geriye dönük
+            # borç yaratmayız; sadece ilerisini üretiriz. (Sayacı yine de ilerletiyoruz
+            # ki doğru aya yetişelim.)
+            if next_due < today:
+                continue
+            made += 1
+            new_invoice = models.Invoice(
+                # Fatura no'ya dönem ekliyoruz: "FTR-2026-111-2026-09"
+                invoice_number=f"{head.invoice_number}-{next_due:%Y-%m}",
+                vendor_name=head.vendor_name,
+                category=head.category,
+                amount=head.amount,
+                currency=head.currency,
+                due_date=next_due,
+                status=schemas.InvoiceStatus.bekliyor.value,
+                notes=head.notes,
+                recurrence=head.recurrence,
+                recurrence_parent_id=head.id,
+                # DİKKAT: ek dosya (dekont) KOPYALANMAZ — o, o aya ait bir belgedir
+            )
+            db.add(new_invoice)
+            created.append(new_invoice)
+
+    db.commit()
+    for inv in created:
+        db.refresh(inv)
+    return created
 
 
 def get_stats(db: Session) -> dict:

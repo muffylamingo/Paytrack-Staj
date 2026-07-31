@@ -24,7 +24,7 @@
 
 ## ⭐ Faz 8 — Ekstra Özellikler (11 adet)
 
-`▓▓▓▓░░░░░░` &nbsp; **4 / 11 tamam (~%36)**
+`▓▓▓▓▓░░░░░` &nbsp; **5 / 11 tamam (~%45)**
 
 | # | Özellik | Zorluk | Durum |
 |:--:|---------|:------:|:-----:|
@@ -32,8 +32,8 @@
 | 2 | KPI Trend Okları | 🟢 Kolay | ✅ **Bitti** |
 | 3 | 🔔 Toast Bildirimleri | 🟢 Kolay | ✅ **Bitti** |
 | 4 | 📎 Fatura Dosyası Ekleme | 🟡 Orta | ✅ **Bitti** |
-| 5 | Tekrarlayan Faturalar | 🟡 Orta | ⏳ Sıradaki |
-| 6 | Bütçe Uyarısı | 🟡 Orta | ⬜ |
+| 5 | 🔁 Tekrarlayan Faturalar | 🟡 Orta | ✅ **Bitti** |
+| 6 | Bütçe Uyarısı | 🟡 Orta | ⏳ Sıradaki |
 | 7 | Excel'den İçe Aktarma | 🟡 Orta | ⬜ |
 | 8 | Çoklu Para Birimi + Kur | 🟡 Orta | ⬜ |
 | 9 | Çoklu Dil (TR/EN) | 🟡 Orta | ⬜ |

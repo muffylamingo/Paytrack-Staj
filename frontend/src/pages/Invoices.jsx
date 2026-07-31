@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Plus, Search, Check, ChevronUp, ChevronDown, ChevronsUpDown, Download } from 'lucide-react'
-import { getInvoices, payInvoice } from '../api/invoices'
+import { Plus, Search, Check, ChevronUp, ChevronDown, ChevronsUpDown, Download, Repeat } from 'lucide-react'
+import { getInvoices, payInvoice, generateRecurring } from '../api/invoices'
 import { formatCurrency, formatDate, statusBadge, isNearDue } from '../lib/format'
 import InvoiceFormModal from '../components/InvoiceFormModal'
 import { useToast } from '../context/ToastContext'
@@ -18,6 +18,7 @@ export default function Invoices() {
   const [sort, setSort] = useState('due_date')
   const [order, setOrder] = useState('asc')
   const [modalOpen, setModalOpen] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const toast = useToast()
 
   async function load() {
@@ -67,6 +68,25 @@ export default function Invoices() {
     toast.info(`${invoices.length} fatura Excel'e aktarılıyor…`)
   }
 
+  // Tekrarlayan faturaların eksik dönemlerini üret
+  async function handleGenerate() {
+    setGenerating(true)
+    try {
+      const { created } = await generateRecurring()
+      if (created > 0) {
+        toast.success(`${created} tekrar faturası oluşturuldu`)
+        load()
+      } else {
+        // Kopya üretmediği için "hiçbir şey yapılmadı" da başarılı bir sonuçtur
+        toast.info('Oluşturulacak yeni tekrar yok — hepsi güncel')
+      }
+    } catch {
+      toast.error('Tekrarlar oluşturulamadı')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   // Bir sütuna tıklayınca: aynı sütunsa yönü çevir, farklıysa o sütuna geç (artan)
   function toggleSort(field) {
     if (sort === field) {
@@ -110,6 +130,14 @@ export default function Invoices() {
           <p className="text-sm text-bark-400">{invoices.length} kayıt</p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            title="Kira/abonelik gibi tekrarlayan faturaların yaklaşan dönemlerini oluşturur"
+            className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50 px-4 py-2.5 text-sm font-medium text-bark-700 transition hover:bg-cream-200 disabled:opacity-60"
+          >
+            <Repeat size={18} className={generating ? 'animate-spin' : ''} /> Tekrarları Oluştur
+          </button>
           <button
             onClick={handleExport}
             className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50 px-4 py-2.5 text-sm font-medium text-bark-700 transition hover:bg-cream-200"
@@ -191,7 +219,24 @@ export default function Invoices() {
                 const near = isNearDue(inv)
                 return (
                   <tr key={inv.id} className={near ? 'bg-overdue-bg/40' : 'hover:bg-cream-100'}>
-                    <td className="px-4 py-3 font-medium text-bark-900">{inv.invoice_number}</td>
+                    <td className="px-4 py-3 font-medium text-bark-900">
+                      <span className="flex items-center gap-1.5">
+                        {inv.invoice_number}
+                        {inv.recurrence && (
+                          <span
+                            title={
+                              inv.recurrence_parent_id
+                                ? `${inv.recurrence} tekrar — otomatik oluşturuldu`
+                                : `${inv.recurrence} tekrarlayan (seri başı)`
+                            }
+                            className="inline-flex items-center gap-0.5 rounded-full bg-cream-200 px-1.5 py-0.5 text-[10px] font-medium text-bark-600"
+                          >
+                            <Repeat size={10} />
+                            {inv.recurrence}
+                          </span>
+                        )}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-bark-800">{inv.vendor_name}</td>
                     <td className="px-4 py-3">
                       <span className="rounded-full bg-cream-200 px-2.5 py-1 text-xs text-bark-700">

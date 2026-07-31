@@ -26,6 +26,13 @@ class InvoiceStatus(str, Enum):
     gecikti = "Gecikti"
 
 
+class Recurrence(str, Enum):
+    """Tekrarlama sıklığı (boş = tekrarlamayan tek seferlik fatura)."""
+    aylik = "Aylık"
+    uc_aylik = "3 Aylık"
+    yillik = "Yıllık"
+
+
 # Ortak alanlar (hem oluştururken hem dönerken lazım olanlar)
 class InvoiceBase(BaseModel):
     invoice_number: str = Field(min_length=1, max_length=50, description="Fatura No")
@@ -35,6 +42,9 @@ class InvoiceBase(BaseModel):
     currency: str = Field(default="TRY", max_length=3)
     due_date: date = Field(description="Son ödeme tarihi (YYYY-MM-DD)")
     notes: str | None = Field(default=None, max_length=500)
+    recurrence: Recurrence | None = Field(
+        default=None, description="Tekrarlama sıklığı (boş = tek seferlik)"
+    )
 
 
 # POST /invoices gövdesi — yeni fatura eklerken kullanıcının gönderdiği veri
@@ -52,6 +62,7 @@ class InvoiceUpdate(BaseModel):
     due_date: date | None = None
     status: InvoiceStatus | None = None
     notes: str | None = Field(default=None, max_length=500)
+    recurrence: Recurrence | None = None
 
 
 # API'nin DÖNDÜRDÜĞÜ fatura — veritabanından okunur (id, tarihler dahil)
@@ -67,6 +78,14 @@ class InvoiceOut(InvoiceBase):
     # Ek dosyanın sadece ADINI dışarı veriyoruz; diskteki gerçek yolu (attachment_path)
     # bilerek gizliyoruz — dış dünyanın sunucu klasör yapısını bilmesine gerek yok.
     attachment_name: str | None = None
+    # Doluysa: bu fatura sistemin ürettiği bir tekrar (arayüzde "otomatik" rozeti için)
+    recurrence_parent_id: int | None = None
+
+
+# POST /invoices/generate-recurring cevabı
+class GenerateResult(BaseModel):
+    created: int                      # kaç yeni fatura üretildi
+    invoices: list["InvoiceOut"]      # üretilenlerin kendisi
 
 
 # --- Dashboard / İstatistik şemaları (Faz 5) ---

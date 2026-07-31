@@ -478,4 +478,70 @@ Arayüzden: yükleme ✅ · yasaklı türde **backend'in mesajı toast'ta** ✅ 
 
 ---
 
+## 📖 Oturum 10 — Tekrarlayan Faturalar (Ekstra Özellik #5) 🔁 ✅
+
+### Neler yaptık
+Kira/abonelik gibi düzenli faturalar. Bir fatura **"Aylık / 3 Aylık / Yıllık"** işaretlenince
+**serinin başı** olur; `POST /invoices/generate-recurring` yaklaşan dönemleri otomatik üretir.
+Bu, ekstralar içinde **en çok "iş mantığı" (business logic)** barındıran özellik.
+
+### 🧠 Veri modeli: seriyi nasıl temsil ettik?
+İki sütun yetti:
+| Sütun | Anlamı |
+|---|---|
+| `recurrence` | "Aylık"/"3 Aylık"/"Yıllık" — boşsa tek seferlik fatura |
+| `recurrence_parent_id` | **Boş** → serinin başı (kullanıcının girdiği) · **Dolu** → sistemin ürettiği tekrar |
+
+Bu, kendi kendine referans veren (**self-referencing**) bir foreign key: `invoices.id` → `invoices.id`.
+🔎 *"self referencing foreign key"*
+
+### ⭐ En önemli kavram: İDEMPOTENCY (aynı işlemi tekrar yapmak sonucu değiştirmemeli)
+Butona 5 kez basınca 5 kat fatura çıkmamalı! Nasıl sağladık?
+> Yeni fatura üretmeden önce **serideki en ileri tarihe** bakıyoruz (`MAX(due_date)`).
+> O tarih zaten ufkun (bugün + 30 gün) ötesindeyse **hiçbir şey yapmıyoruz.**
+
+Test ettik: 1. çalıştırma → üretti, 2. ve 3. çalıştırma → **0**. ✅
+🔎 *"idempotency nedir"* — ödeme sistemlerinde de hayati bir kavram (aynı ödemenin 2 kez geçmemesi).
+
+### 🐞 Yaptığım tasarım hatası ve düzeltmesi
+İlk sürüm **geçmişe dönük** de fatura üretti: seri başı Mart 2026 olduğu için Nisan–Temmuz aylarını
+"ödenmemiş borç" olarak yarattı (6 fatura, 144.000 ₺!). **Yanlış:** hiç oluşturulmamış geçmiş aylar
+birdenbire borç olarak belirmemeli. **Düzeltme:** döngü geçmiş dönemleri **atlıyor** (sayaç ilerliyor
+ama kayıt açılmıyor), sadece bugünden ileriye üretiyor.
+> 💡 Ders: Bir algoritma "çalışıyor" olabilir ama **iş kuralı olarak yanlış** olabilir. Sonuçlara bak.
+
+### 📅 Ay sonu tuzağı — `add_months()`
+`ay + 1` diye **yazılamaz**: 31 Ocak + 1 ay = **31 Şubat**?! Öyle bir gün yok.
+`calendar.monthrange()` ile o ayın kaç gün çektiğini bulup kırpıyoruz. Test ettik:
+```
+2026-01-31 +  1 ay = 2026-02-28   ✅
+2026-03-31 +  1 ay = 2026-04-30   ✅
+2024-01-31 +  1 ay = 2024-02-29   ✅ (artık yıl!)
+2026-12-15 +  1 ay = 2027-01-15   ✅ (yıl atlama)
+```
+🔎 *"python calendar monthrange"*, *"artık yıl (leap year)"*
+
+### 🔗 `ON DELETE SET NULL` — neden CASCADE değil?
+Seri başı silinince çocukları da silinseydi (**CASCADE**), kesilmiş gerçek faturalar yok olurdu —
+muhasebede **kabul edilemez**. Biz `SET NULL` seçtik: bağ kopar, faturalar durur. Test ettik ✅
+🔎 *"on delete cascade vs set null"*
+
+### Çalışman gereken konular
+1. **Emniyet frenleri (guard):** `MAX_PER_SERIES` ve `MAX_STEPS` — bozuk veri sonsuz döngüye sokmasın.
+2. **SQL `MAX()` / `func.max`:** SQLAlchemy'de toplama fonksiyonu kullanımı.
+3. **`or_()`:** "Ya seri başı ya da çocuğu" koşulu (`WHERE id = X OR parent_id = X`).
+4. **Route sırası (yine!):** `/invoices/generate-recurring`, `/invoices/{id}`'den **önce** tanımlanmalı.
+5. **Alembic kısıt isimlendirme:** Autogenerate FK adını `None` bıraktı → `downgrade()` onu bulamazdı.
+   Elle isim verdik (`fk_invoices_recurrence_parent`). **Migration dosyasını hep oku!** 🔎 *"alembic naming convention"*
+6. **Boş string ≠ null:** Formdaki `""` seçeneğini backend'e `null` olarak gönderiyoruz, yoksa
+   Pydantic "geçerli bir Recurrence değil" diye **422** döner.
+
+### 🎤 Sunumda söyleyebileceğin cümle
+> *"Kira ve abonelik gibi düzenli giderler için tekrarlayan fatura mekanizması yazdım. Seriyi kendi
+> kendine referans veren bir foreign key ile modelledim. Üretim uç noktası **idempotent**: kaç kez
+> çağrılırsa çağrılsın kopya oluşturmuyor, çünkü serinin en ileri tarihine bakıp karar veriyor.
+> Ay sonu taşmalarını da (31 Ocak + 1 ay) ayrıca ele aldım."*
+
+---
+
 <!-- Sonraki oturumların notları buraya eklenecek -->

@@ -14,6 +14,9 @@ Ekstra (Özellik #4 — dosya eki):
   POST   /invoices/{id}/attachment -> dekont/PDF yükle
   GET    /invoices/{id}/attachment -> ekli dosyayı indir
   DELETE /invoices/{id}/attachment -> eki kaldır
+
+Ekstra (Özellik #5 — tekrarlayan faturalar):
+  POST   /invoices/generate-recurring -> eksik tekrarları üret
 """
 import io
 from typing import Literal
@@ -102,6 +105,17 @@ def export_invoices(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="faturalar.xlsx"'},
     )
+
+
+# NOT: Bu da /{invoice_id}'den ÖNCE — yol adları id sanılmasın.
+@router.post("/generate-recurring", response_model=schemas.GenerateResult)
+def generate_recurring(db: Session = Depends(get_db)):
+    """
+    Tekrarlayan faturaların eksik tekrarlarını üretir (bugünden 30 gün ilerisine kadar).
+    Tekrar tekrar çağrılabilir: zaten üretilmişse yenisini oluşturmaz (idempotent).
+    """
+    created = crud.generate_recurring(db)
+    return {"created": len(created), "invoices": created}
 
 
 @router.get("/{invoice_id}", response_model=schemas.InvoiceOut)

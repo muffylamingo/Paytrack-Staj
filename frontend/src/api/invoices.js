@@ -23,6 +23,12 @@ export async function deleteInvoice(id) {
   await api.delete(`/invoices/${id}`)
 }
 
+// Tekrarlayan faturaların eksik tekrarlarını üret (idempotent: kopya oluşturmaz)
+export async function generateRecurring() {
+  const { data } = await api.post('/invoices/generate-recurring')
+  return data // { created: sayı, invoices: [...] }
+}
+
 // --- Ek dosya (dekont) işlemleri ---
 
 // Dosya yükle. FormData kullanıyoruz çünkü dosya JSON'a sığmaz;

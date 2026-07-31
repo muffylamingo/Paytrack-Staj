@@ -49,6 +49,16 @@ class Invoice(Base):
     status: Mapped[str] = mapped_column(String(20), default="Bekliyor")   # Durum
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True) # Açıklama (opsiyonel)
 
+    # --- Tekrarlayan fatura (kira, abonelik...) ---
+    # recurrence dolu ise bu fatura bir SERİNİN parçasıdır ("Aylık" / "3 Aylık" / "Yıllık").
+    # recurrence_parent_id BOŞ ise  -> serinin BAŞI (kullanıcının elle girdiği ilk fatura)
+    # recurrence_parent_id DOLU ise -> sistemin otomatik ürettiği tekrar
+    recurrence: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    recurrence_parent_id: Mapped[int | None] = mapped_column(
+        # ondelete="SET NULL": seri başı silinirse çocukları silinmez, sadece bağı kopar
+        ForeignKey("invoices.id", ondelete="SET NULL"), nullable=True
+    )
+
     # --- Ek dosya (dekont/fatura PDF'i veya görseli) ---
     # DİKKAT: Dosyanın KENDİSİNİ veritabanına koymuyoruz! Diske yazıyoruz,
     # veritabanında sadece "nerede olduğu" ve "orijinal adı" duruyor.

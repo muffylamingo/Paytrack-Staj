@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext'
 
 const CATEGORIES = ['Enerji', 'Yazılım', 'Kira', 'Mutfak']
 const CURRENCIES = ['TRY', 'USD', 'EUR']
+const RECURRENCES = ['Aylık', '3 Aylık', 'Yıllık']
 
 const EMPTY = {
   invoice_number: '',
@@ -14,6 +15,7 @@ const EMPTY = {
   currency: 'TRY',
   due_date: '',
   notes: '',
+  recurrence: '',   // boş = tek seferlik fatura
 }
 
 const inputCls =
@@ -44,7 +46,13 @@ export default function InvoiceFormModal({ open, onClose, onCreated }) {
     setSaving(true)
     setError('')
     try {
-      await createInvoice({ ...form, amount: Number(form.amount) })
+      await createInvoice({
+        ...form,
+        amount: Number(form.amount),
+        // Boş metin yerine null gönder — backend "tekrarlamaz" diye anlasın
+        // (boş string geçerli bir Recurrence değeri değil, 422 hatası verirdi)
+        recurrence: form.recurrence || null,
+      })
       toast.success(`${form.vendor_name} faturası kaydedildi`)
       setForm(EMPTY)
       onCreated() // listeyi yenile
@@ -102,6 +110,19 @@ export default function InvoiceFormModal({ open, onClose, onCreated }) {
           </div>
           <Field label="Son Ödeme Tarihi">
             <input required type="date" value={form.due_date} onChange={set('due_date')} className={inputCls} />
+          </Field>
+          <Field label="Tekrarlama">
+            <select value={form.recurrence} onChange={set('recurrence')} className={inputCls}>
+              <option value="">Tekrarlamaz (tek seferlik)</option>
+              {RECURRENCES.map((r) => (
+                <option key={r} value={r}>{r} tekrarla</option>
+              ))}
+            </select>
+            {form.recurrence && (
+              <span className="mt-1 block text-xs text-bark-400">
+                🔁 Bu fatura bir serinin başı olur; sonraki dönemler otomatik oluşturulabilir.
+              </span>
+            )}
           </Field>
           <Field label="Not (opsiyonel)">
             <textarea value={form.notes} onChange={set('notes')} rows={2} className={inputCls} />
