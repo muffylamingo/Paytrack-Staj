@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
-import { Plus, Search, Check, ChevronUp, ChevronDown, ChevronsUpDown, Download, Repeat } from 'lucide-react'
-import { getInvoices, payInvoice, generateRecurring } from '../api/invoices'
+import { useEffect, useRef, useState } from 'react'
+import { Plus, Search, Check, ChevronUp, ChevronDown, ChevronsUpDown, Download, Repeat, Upload, FileDown } from 'lucide-react'
+import { getInvoices, payInvoice, generateRecurring, importInvoices, templateUrl } from '../api/invoices'
+import ImportResultModal from '../components/ImportResultModal'
 import { formatCurrency, formatDate, statusBadge, isNearDue } from '../lib/format'
 import InvoiceFormModal from '../components/InvoiceFormModal'
 import { useToast } from '../context/ToastContext'
@@ -19,6 +20,9 @@ export default function Invoices() {
   const [order, setOrder] = useState('asc')
   const [modalOpen, setModalOpen] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState(null)
+  const fileRef = useRef(null)
   const toast = useToast()
 
   async function load() {
@@ -66,6 +70,30 @@ export default function Invoices() {
     a.click()
     a.remove()
     toast.info(`${invoices.length} fatura Excel'e aktarılıyor…`)
+  }
+
+  // Excel'den toplu yükle
+  async function handleImport(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''            // aynı dosya tekrar seçilebilsin
+    if (!file) return
+
+    setImporting(true)
+    try {
+      const result = await importInvoices(file)
+      load()
+      if (result.failed === 0) {
+        toast.success(`${result.imported} fatura içe aktarıldı`)
+      } else {
+        // Hata varsa detaylı raporu aç (toast'a 20 satır sığmaz)
+        toast.info(`${result.imported} eklendi, ${result.failed} satır atlandı`)
+        setImportResult(result)
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Dosya içe aktarılamadı')
+    } finally {
+      setImporting(false)
+    }
   }
 
   // Tekrarlayan faturaların eksik dönemlerini üret
@@ -129,7 +157,30 @@ export default function Invoices() {
           <h1 className="font-serif text-3xl font-semibold text-bark-900">Faturalar</h1>
           <p className="text-sm text-bark-400">{invoices.length} kayıt</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {/* Gizli dosya seçici — kendi butonumuzla tetikliyoruz */}
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx"
+            onChange={handleImport}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={importing}
+            title="Doldurulmuş .xlsx dosyasından toplu fatura yükle"
+            className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50 px-4 py-2.5 text-sm font-medium text-bark-700 transition hover:bg-cream-200 disabled:opacity-60"
+          >
+            <Upload size={18} /> {importing ? 'Yükleniyor…' : "Excel'den Yükle"}
+          </button>
+          <a
+            href={templateUrl()}
+            title="Doğru sütunları içeren boş şablonu indir"
+            className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50 px-3 py-2.5 text-sm font-medium text-bark-400 transition hover:bg-cream-200 hover:text-bark-700"
+          >
+            <FileDown size={18} />
+          </a>
           <button
             onClick={handleGenerate}
             disabled={generating}
@@ -277,6 +328,9 @@ export default function Invoices() {
 
       {/* Yeni fatura formu */}
       <InvoiceFormModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={load} />
+
+      {/* İçe aktarma sonuç raporu (sadece hatalı satır varsa açılır) */}
+      <ImportResultModal result={importResult} onClose={() => setImportResult(null)} />
     </div>
   )
 }

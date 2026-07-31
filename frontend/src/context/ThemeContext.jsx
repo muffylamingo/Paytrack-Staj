@@ -27,7 +27,23 @@ export function ThemeProvider({ children }) {
 
   // Tema her değiştiğinde: <html class="dark"> aç/kapa + tarayıcı hafızasına yaz
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark')
+    const root = document.documentElement
+
+    // Renkleri değiştirmeden ÖNCE tüm CSS geçişlerini kapat.
+    // Neden? Değeri CSS değişkeninden gelen bir özellik "transition" altındaysa,
+    // tarayıcı değişken değişince rengi yeniden hesaplamıyor ve eleman eski
+    // temanın renginde takılı kalıyor (index.css'teki .theme-switching notuna bak).
+    root.classList.add('theme-switching')
+
+    root.classList.toggle('dark', theme === 'dark')
+
+    // offsetHeight okumak tarayıcıyı stilleri O ANDA hesaplamaya zorlar ("reflow").
+    // Böylece yeni renkler geçişler kapalıyken hesaplanmış olur; hemen ardından
+    // geçişleri geri açabiliriz. (requestAnimationFrame kullanmıyoruz: sekme
+    // görünmüyorken hiç tetiklenmeyebiliyor ve geçişler kalıcı kapalı kalıyordu.)
+    void root.offsetHeight
+
+    root.classList.remove('theme-switching')
     localStorage.setItem(STORAGE_KEY, theme)
   }, [theme])
 

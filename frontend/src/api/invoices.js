@@ -29,6 +29,21 @@ export async function generateRecurring() {
   return data // { created: sayı, invoices: [...] }
 }
 
+// --- Excel içe aktarma (Ekstra #7) ---
+
+// Doldurulmuş .xlsx dosyasından toplu fatura yükle
+export async function importInvoices(file) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await api.post('/invoices/import', form)
+  return data // { imported, failed, errors: [{row, message}] }
+}
+
+// Boş şablonun indirme adresi
+export function templateUrl() {
+  return `${api.defaults.baseURL}/invoices/import-template`
+}
+
 // --- Ek dosya (dekont) işlemleri ---
 
 // Dosya yükle. FormData kullanıyoruz çünkü dosya JSON'a sığmaz;

@@ -17,6 +17,10 @@ Ekstra (Özellik #4 — dosya eki):
 
 Ekstra (Özellik #5 — tekrarlayan faturalar):
   POST   /invoices/generate-recurring -> eksik tekrarları üret
+
+Ekstra (Özellik #7 — Excel'den içe aktarma):
+  GET    /invoices/import-template -> boş şablonu indir
+  POST   /invoices/import          -> doldurulmuş dosyadan toplu yükle
 """
 import io
 from typing import Literal
@@ -26,9 +30,10 @@ from fastapi.responses import FileResponse
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from app import crud, models, schemas, storage
+from app import crud, excel_io, models, schemas, storage
 from app.database import get_db
 
 router = APIRouter(prefix="/invoices", tags=["Faturalar"])
@@ -105,6 +110,78 @@ def export_invoices(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="faturalar.xlsx"'},
     )
+
+
+@router.get("/import-template")
+def import_template():
+    """Boş içe aktarma şablonunu (.xlsx) indirir — kullanıcı doğru sütunları görsün."""
+    return Response(
+        content=excel_io.build_template(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="fatura-sablonu.xlsx"'},
+    )
+
+
+@router.post("/import", response_model=schemas.ImportResult)
+async def import_invoices(
+    file: UploadFile = File(..., description="Doldurulmuş .xlsx dosyası"),
+    db: Session = Depends(get_db),
+):
+    """
+    Excel dosyasından toplu fatura yükler.
+
+    KISMİ BAŞARI stratejisi: geçerli satırlar eklenir, hatalı satırlar atlanır ve
+    kullanıcıya satır numarasıyla raporlanır. (Alternatif "hepsi ya da hiçbiri"
+    olurdu; 500 satırın 1'i bozuk diye 499'unu geri çevirmek kullanıcıyı yorar.)
+    """
+    if file.content_type not in excel_io.ALLOWED_TYPES and not (file.filename or "").endswith(".xlsx"):
+        raise HTTPException(status_code=400, detail="Sadece .xlsx dosyası yüklenebilir.")
+
+    content = await file.read()
+    try:
+        rows = excel_io.parse_invoices(content)
+    except excel_io.ExcelError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    mevcut = crud.existing_invoice_numbers(db)   # veritabanındaki numaralar
+    dosyada: set[str] = set()                    # dosyanın kendi içindeki kopyalar
+    hazir: list[models.Invoice] = []
+    hatalar: list[dict] = []
+
+    for row_no, data in rows:
+        # 1) Hücre çevirme hatası (tarih/tutar okunamadı)
+        if "__error__" in data:
+            hatalar.append({"row": row_no, "message": data["__error__"]})
+            continue
+
+        # 2) Kopya kontrolü — aynı fatura numarası iki kez girilmesin
+        numara = data.get("invoice_number")
+        if numara in mevcut:
+            hatalar.append({"row": row_no, "message": f"'{numara}' zaten kayıtlı, atlandı"})
+            continue
+        if numara in dosyada:
+            hatalar.append({"row": row_no, "message": f"'{numara}' dosyada tekrar ediyor, atlandı"})
+            continue
+
+        # 3) Asıl doğrulama: Pydantic şemasından geçir (kategori/durum/tutar>0 ...)
+        try:
+            gecerli = schemas.InvoiceCreate(**data)
+        except ValidationError as e:
+            ilk = e.errors()[0]
+            alan = ilk["loc"][0] if ilk["loc"] else "?"
+            hatalar.append({"row": row_no, "message": f"{alan}: {ilk['msg']}"})
+            continue
+
+        dosyada.add(numara)
+        hazir.append(models.Invoice(**gecerli.model_dump()))
+
+    crud.bulk_create_invoices(db, hazir)
+
+    return {
+        "imported": len(hazir),
+        "failed": len(hatalar),
+        "errors": hatalar[:20],   # raporu şişirmemek için ilk 20 hata
+    }
 
 
 # NOT: Bu da /{invoice_id}'den ÖNCE — yol adları id sanılmasın.

@@ -24,7 +24,7 @@
 
 ## ⭐ Faz 8 — Ekstra Özellikler (11 adet)
 
-`▓▓▓▓▓▓░░░░` &nbsp; **6 / 11 tamam (~%55)**
+`▓▓▓▓▓▓▓░░░` &nbsp; **7 / 11 tamam (~%64)**
 
 | # | Özellik | Zorluk | Durum |
 |:--:|---------|:------:|:-----:|
@@ -34,8 +34,8 @@
 | 4 | 📎 Fatura Dosyası Ekleme | 🟡 Orta | ✅ **Bitti** |
 | 5 | 🔁 Tekrarlayan Faturalar | 🟡 Orta | ✅ **Bitti** |
 | 6 | 💰 Bütçe Uyarısı | 🟡 Orta | ✅ **Bitti** |
-| 7 | Excel'den İçe Aktarma | 🟡 Orta | ⏳ Sıradaki |
-| 8 | Çoklu Para Birimi + Kur | 🟡 Orta | ⬜ |
+| 7 | 📥 Excel'den İçe Aktarma | 🟡 Orta | ✅ **Bitti** |
+| 8 | Çoklu Para Birimi + Kur | 🟡 Orta | ⏳ Sıradaki |
 | 9 | Çoklu Dil (TR/EN) | 🟡 Orta | ⬜ |
 | 10 | İşlem Geçmişi (Audit Log) | 🟠 Zor | ⬜ |
 | 11 | Ödeme Takvimi Görünümü | 🟠 Zor | ⬜ |

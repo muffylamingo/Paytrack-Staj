@@ -206,6 +206,22 @@ def generate_recurring(db: Session) -> list[models.Invoice]:
     return created
 
 
+def existing_invoice_numbers(db: Session) -> set[str]:
+    """Veritabanındaki tüm fatura numaraları (içe aktarmada kopya kontrolü için)."""
+    return set(db.scalars(select(models.Invoice.invoice_number)).all())
+
+
+def bulk_create_invoices(db: Session, items: list[models.Invoice]) -> None:
+    """
+    Birden çok faturayı TEK commit ile ekler.
+
+    Neden tek commit? Her satır için ayrı commit atmak 500 satırda 500 kez
+    diske yazmak demektir — çok yavaş. Toplu ekleme çok daha hızlı.
+    """
+    db.add_all(items)
+    db.commit()
+
+
 # ---------------------------------------------------------------
 # Bütçeler (Ekstra Özellik #6)
 # ---------------------------------------------------------------

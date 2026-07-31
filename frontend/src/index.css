@@ -121,6 +121,28 @@
   color-scheme: dark;
 }
 
+/* ============================================================
+   🔧 Tema değişimi anında TÜM geçişleri kapat
+
+   SORUN: Bir özelliğin değeri CSS değişkeninden geliyorsa
+   (örn. bg-cream-50 -> var(--color-cream-50)) ve o özellik
+   "transition" listesindeyse, tarayıcı (Chromium) değişken
+   değişince rengi YENİDEN HESAPLAMIYOR -> eleman eski temanın
+   renginde takılı kalıyor. Tailwind'in `transition` sınıfı
+   background-color/color/border-color'ı kapsadığı için bu,
+   hover efekti olan her butonu etkiliyordu.
+
+   ÇÖZÜM: Tema değişirken <html>'e kısa süreliğine bu sınıfı
+   ekliyoruz (ThemeContext yapıyor), renkler anında uygulanıyor,
+   sonra sınıf kaldırılıp hover geçişleri geri geliyor.
+   ============================================================ */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
 /* Sayfa geneli temel stil */
 body {
   margin: 0;

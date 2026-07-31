@@ -606,4 +606,96 @@ arayüzde kaydetme + canlı uyarı güncellemesi ✅ · her iki temada renkler �
 
 ---
 
+## 📖 Oturum 12 — Excel'den İçe Aktarma (Ekstra #7) 📥 + kritik bir tema hatası ✅
+
+### Neler yaptık
+Dışa aktarmanın **tersi**: doldurulmuş `.xlsx` dosyasından toplu fatura yükleme.
+Ayrıca kullanıcı doğru sütunları görsün diye **indirilebilir boş şablon**.
+
+| Katman | Dosya | Görevi |
+|---|---|---|
+| Excel okuma | `app/excel_io.py` **(yeni)** | hücreleri okur, tipleri çevirir, şablon üretir |
+| Router | `app/routers/invoices.py` | `GET /invoices/import-template`, `POST /invoices/import` |
+| CRUD | `app/crud.py` | `existing_invoice_numbers`, `bulk_create_invoices` |
+| Frontend | `components/ImportResultModal.jsx` **(yeni)** | satır satır hata raporu |
+
+### 💡 İçe aktarma, dışa aktarmadan neden ÇOK daha zordur?
+Dışa aktarırken veriye **biz** hükmederiz. İçe aktarırken **kullanıcının dosyası** gelir:
+sütunlar eksik/karışık olabilir, tarih `15.08.2026` yazılmış olabilir, tutar `4.200,50` (Türkçe
+biçim) gelebilir, satır bomboş olabilir, aynı fatura iki kez girilmiş olabilir…
+**Kural: dışarıdan gelen hiçbir veriye güvenme.**
+
+### 🎯 Tasarım kararı: "Kısmi başarı" (partial success)
+Geçerli satırlar eklenir, hatalı satırlar **atlanır ve satır numarasıyla raporlanır**.
+Alternatif "hepsi ya da hiçbiri" olurdu — ama 500 satırın 1'i bozuk diye 499'unu geri çevirmek
+kullanıcıyı çıldırtır. 🔎 *"partial success vs all or nothing import"*
+
+### Çalışman gereken konular
+1. **Savunmacı ayrıştırma (defensive parsing):** `_parse_amount` hem `4200.50` hem `4.200,50` anlar;
+   `_parse_date` hem Excel tarih hücresini hem `2026-08-15` hem `15.08.2026` anlar.
+2. **Esnek başlık eşleme:** "Tedarikçi" de "Tedarikci" de kabul ediliyor (`HEADER_MAP`).
+3. **Pydantic'i doğrulayıcı olarak kullanmak:** Satırı `schemas.InvoiceCreate(**data)` ile geçirdik;
+   kategori/durum/tutar>0 kurallarını **tekrar yazmadık**. `ValidationError` yakalayıp mesajı aldık.
+   🔎 *"pydantic validationerror handling"*
+4. **Toplu ekleme (`add_all` + tek `commit`):** 500 satır için 500 commit atmak çok yavaş olurdu.
+5. **Kopya kontrolü iki yerde:** veritabanında var mı? **ve** dosyanın kendi içinde tekrar ediyor mu?
+6. **Emniyet frenleri:** `MAX_ROWS = 1000`, hata raporunda ilk 20 hata.
+7. **Kullanıcıya YARDIM eden hata mesajları:** *"Şu sütunlar bulunamadı: Fatura No, Kategori…
+   Şablonu indirip kullanabilirsin."* — "Hata oluştu" demek işe yaramaz.
+
+### 🧪 Test ettiklerimiz (kasıtlı bozuk dosyayla)
+```
+3 eklendi (TR biçim tutar "4.200,50" ✅, TR tarih "15.09.2026" ✅, Excel tarih hücresi ✅)
+7 atlandı:
+  satır  6: category: Input should be 'Enerji', 'Yazılım', 'Kira' or 'Mutfak'
+  satır  7: amount: Input should be greater than 0
+  satır  8: Tarih anlaşılamadı: 'abc'
+  satır  9: Tutar sayıya çevrilemedi: 'yuz lira'
+  satır 10: invoice_number: Field required
+  satır 11: 'IMP-001' dosyada tekrar ediyor
+  satır 12: 'FTR-2026-113' zaten kayıtlı
+Boş satır sessizce atlandı ✅ · Sahte .xlsx → 400 ✅ · PDF → 400 ✅ · yanlış sütun → yardımcı mesaj ✅
+```
+
+---
+
+## 🐞🐞 BÜYÜK HATA: Karanlık mod aslında yarım çalışıyormuş!
+
+Bu oturumda fark ettim: **`transition` sınıfı olan HER eleman** (butonlar, menü linkleri, rozetler)
+tema değişince **eski temanın renginde takılı kalıyordu.**
+
+```
+Sidebar (transition YOK) : #231C15 -> #FBF8F1  ✅ değişti
+Buton   (transition VAR) : #231C15 -> #231C15  ❌ 3 saniye sonra bile aynı!
+```
+
+### Sebep
+Bir özelliğin değeri CSS değişkeninden geliyorsa (`bg-cream-50` → `var(--color-cream-50)`) **ve** o
+özellik `transition` listesindeyse, Chromium değişken değişince rengi **yeniden hesaplamıyor**.
+Tailwind'in `transition` sınıfı `background-color`, `color`, `border-color`'ı kapsıyor — yani hover
+efekti olan her buton etkileniyordu.
+
+### Çözüm (standart teknik)
+1. `index.css`'e `.theme-switching * { transition: none !important }` kuralı
+2. `ThemeContext`'te: sınıfı ekle → temayı değiştir → **`void root.offsetHeight`** (tarayıcıyı
+   stilleri o anda hesaplamaya zorlayan "reflow" hilesi) → sınıfı kaldır
+
+Böylece renkler geçişler kapalıyken anında uygulanıyor, **hover animasyonları da korunuyor** (0.15s).
+
+> 🎓 **Asıl ders — TEST YÖNTEMİ:** Bu hatayı daha önce kaçırdım çünkü doğrularken sadece
+> `transition`'ı **olmayan** elemanları (sidebar, tablo, body) ölçmüştüm. *"Birkaç örnek doğru"*
+> demek *"her şey doğru"* demek değildir. Farklı **türde** örnekler seç. 🔎 *"test coverage sampling bias"*
+>
+> 📌 Kural: `transition-all` kullanma, neyi animasyonladığını açıkça yaz — ve tema değişkenlerinden
+> beslenen özelliklerle transition'ı bir arada kullanırken dikkatli ol.
+
+### 🎤 Sunumda söyleyebileceğin cümle
+> *"Excel'den toplu yükleme için kısmi başarı stratejisi uyguladım: geçerli satırlar aktarılıyor,
+> hatalılar satır numarası ve sebebiyle raporlanıyor. Satır doğrulamasını kural yazarak değil,
+> mevcut Pydantic şemamı kullanarak yaptım — böylece API ile Excel aynı kuralları paylaşıyor.
+> Ayrıca karanlık modda CSS geçişleri yüzünden renklerin güncellenmediği bir tarayıcı davranışını
+> tespit edip geçişleri tema değişimi anında geçici olarak devre dışı bırakarak çözdüm."*
+
+---
+
 <!-- Sonraki oturumların notları buraya eklenecek -->

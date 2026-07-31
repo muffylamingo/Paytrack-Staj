@@ -88,6 +88,19 @@ class GenerateResult(BaseModel):
     invoices: list["InvoiceOut"]      # üretilenlerin kendisi
 
 
+# --- Excel içe aktarma şemaları (Ekstra Özellik #7) ---
+class ImportRowError(BaseModel):
+    """Tek bir satırın neden alınamadığı."""
+    row: int          # Excel'deki satır numarası (kullanıcı dosyada bulabilsin)
+    message: str
+
+
+class ImportResult(BaseModel):
+    imported: int                    # başarıyla eklenen satır sayısı
+    failed: int                      # hatalı satır sayısı
+    errors: list[ImportRowError]     # ilk N hatanın detayı
+
+
 # --- Bütçe şemaları (Ekstra Özellik #6) ---
 class BudgetIn(BaseModel):
     """PUT /budgets/{kategori} gövdesi — sadece limit gönderilir."""
