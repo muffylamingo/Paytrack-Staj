@@ -11,6 +11,8 @@ Sunucuyu şu komutla çalıştırırız:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app import audit  # noqa: F401  (import edilmesi ŞART: olay dinleyicisini kaydeder)
+from app.routers import audit as audit_router
 from app.routers import budgets, invoices, rates, stats
 
 app = FastAPI(
@@ -44,3 +46,5 @@ app.include_router(stats.router)
 app.include_router(budgets.router)
 # Döviz kurları (GET/PUT /rates)
 app.include_router(rates.router)
+# İşlem geçmişi (GET /audit) — kayıtlar otomatik oluşur, burası sadece okur
+app.include_router(audit_router.router)

@@ -91,6 +91,26 @@ class GenerateResult(BaseModel):
     invoices: list["InvoiceOut"]      # üretilenlerin kendisi
 
 
+# --- İşlem geçmişi şemaları (Ekstra Özellik #10) ---
+class FieldChange(BaseModel):
+    field: str
+    old: str | None = None
+    new: str | None = None
+
+
+class AuditLogOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    entity: str                    # "invoice" | "budget" | "rate"
+    entity_id: int | None = None
+    entity_label: str
+    action: str                    # "create" | "update" | "delete"
+    username: str | None = None    # boş = Sistem (giriş sistemi Faz 7'de gelecek)
+    created_at: datetime
+    changes: list[FieldChange] = []   # JSON metni burada listeye çevrilir
+
+
 # --- Döviz kuru şemaları (Ekstra Özellik #8) ---
 class Currency(str, Enum):
     try_ = "TRY"

@@ -827,4 +827,74 @@ Aynı sebeple tedarikçi adı ("Ofis Kirası") İngilizce modda da Türkçe kal�
 
 ---
 
+## 📖 Oturum 15 — İşlem Geçmişi / Audit Log (Ekstra #10) 📜 ✅
+
+### Neler yaptık
+"Kim, ne zaman, neyi değiştirdi" kaydı. Yeni bir menü öğesi: **İşlem Geçmişi**.
+```
+Fatura AUDIT-TEST güncellendi
+  Tutar   1.000,00 → 2.500,00
+  Durum   Bekliyor → Ödendi
+  31 Temmuz 2026 08:07 · Sistem
+```
+
+### ⭐ İşin en değerli kısmı: HİÇBİR ENDPOINT'E LOG KODU YAZMADIK
+Normalde her endpoint'e "bir de log ekle" satırı yazılır — ve **bir gün mutlaka unutulur.**
+Bunun yerine **SQLAlchemy'nin olay sistemini** kullandık:
+
+```python
+@event.listens_for(Session, "before_flush")
+def _capture_changes(session, flush_context, instances):
+    for obj in session.new:      -> "create"
+    for obj in session.dirty:    -> "update" (+ hangi alan ne olmuş)
+    for obj in session.deleted:  -> "delete"
+```
+
+`before_flush`, veritabanına yazılmadan **hemen önce** tetiklenir ve o an oturumda ne olduğunu
+gösterir. Böylece yarın yeni bir endpoint yazan kişi log eklemeyi **unutamaz** — sistem kendisi
+kaydeder.
+> Bu tür "her yeri ilgilendiren" işlere (loglama, yetki, önbellek) **çapraz kesen ilgiler**
+> (*cross-cutting concerns*) denir ve hep böyle merkezî çözülür. 🔎 *"sqlalchemy event before_flush"*,
+> *"cross-cutting concerns"*
+
+### Çalışman gereken konular
+1. **ORM olay (event) sistemi:** `event.listens_for(...)`. Dinleyicinin **kaydedilmesi için**
+   modülün import edilmesi şart — `main.py`'de `from app import audit` var (yoksa hiç çalışmaz!).
+2. **Attribute history:** SQLAlchemy her alan için eski/yeni değeri tutar:
+   `inspect(obj).attrs['amount'].history.deleted` (eski) / `.added` (yeni). Değişikliği böyle bulduk.
+3. **JSON'u metin sütununda saklamak:** Değişiklikler `Text` sütununda JSON dizesi olarak duruyor;
+   API okurken listeye çeviriyor. `Decimal` ve tarih JSON'a doğrudan yazılamaz → `_serialize` ile
+   metne çevirdik. 🔎 *"json serialization decimal date python"*
+4. **Denetim kaydı DEĞİŞTİRİLEMEZ:** `/audit` endpoint'inde bilerek sadece **GET** var.
+   PUT/DELETE koysaydık, denetim kaydı denetim kaydı olmaktan çıkardı. 🔎 *"immutable audit log"*
+5. **Sonsuz döngüden kaçınmak:** `AuditLog`'un kendisi `TRACKED` listesinde **değil**; olsaydı her
+   log kaydı yeni bir log doğurur, sistem kilitlenirdi.
+6. **`useEffect` temizliği (cleanup):** Filtre hızlı değişince eski isteğin cevabı yeniyi ezmesin
+   diye `let iptal = false; return () => { iptal = true }` kalıbını kullandık.
+   🔎 *"react useeffect cleanup race condition"*
+
+### ⚠️ Bilinçli bir sınırlama
+**"create" kayıtlarında `entity_id` boş kalıyor.** Çünkü `before_flush` anında id henüz üretilmemiştir
+(id'yi veritabanı yazma sırasında verir). Yeni nesne eklemek için güvenli olan tek olay `before_flush`
+olduğundan bunu kabul ettik — kaydı zaten `entity_label` (örn. "FTR-2026-113") ile tanıyoruz.
+
+### 🔮 Faz 7 ile bağlantısı
+`username` sütunu şimdilik boş, arayüzde **"Sistem"** yazıyor. Keycloak girişi (Faz 7) eklenince
+oraya gerçek kullanıcı adı yazılacak ve log tam anlamıyla "kim" sorusunu da cevaplayacak.
+
+### 🧪 Test ettiklerimiz
+4 farklı işlem yaptık, **hiçbirine log kodu yazmadan hepsi yakalandı** ✅ ·
+eski→yeni değerler doğru ✅ · silme kaydı ✅ · log kendi kendini loglamıyor ✅ ·
+filtreler (`entity`, `action`) ✅ · geçersiz filtre **422** ✅ ·
+arayüzden eklenen fatura anında geçmişe düştü ✅ · TR/EN ✅ · konsol hatası yok ✅
+
+### 🎤 Sunumda söyleyebileceğin cümle
+> *"Denetim kaydını her endpoint'e tek tek log satırı ekleyerek değil, SQLAlchemy'nin `before_flush`
+> olayını dinleyerek merkezî şekilde çözdüm. Böylece veritabanına giden her değişiklik — hangi alanın
+> eski ve yeni değeriyle birlikte — otomatik kaydediliyor ve yeni bir endpoint yazarken loglamayı
+> unutmak mümkün değil. Denetim kaydını değiştirilemez tutmak için o uç noktada sadece okuma işlemi
+> bıraktım."*
+
+---
+
 <!-- Sonraki oturumların notları buraya eklenecek -->

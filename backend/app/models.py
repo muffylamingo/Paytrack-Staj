@@ -10,7 +10,7 @@ PDF şeması:
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, func
+from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -33,6 +33,31 @@ class User(Base):
 
     # Bir kullanıcının birçok faturası olabilir (1 - N ilişki)
     invoices: Mapped[list["Invoice"]] = relationship(back_populates="user")
+
+
+class AuditLog(Base):
+    """
+    İşlem geçmişi (Ekstra Özellik #10): kim, ne zaman, neyi değiştirdi.
+
+    Bu tabloya kayıtları ELLE eklemiyoruz — `app/audit.py` içindeki SQLAlchemy
+    olay dinleyicisi her değişikliği otomatik yakalıyor. Böylece bir endpoint
+    yazarken log eklemeyi UNUTMAK imkânsız.
+    """
+
+    __tablename__ = "audit_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    entity: Mapped[str] = mapped_column(String(30), index=True)   # "invoice" | "budget" | "rate"
+    entity_id: Mapped[int | None] = mapped_column(nullable=True)
+    entity_label: Mapped[str] = mapped_column(String(120))        # "FTR-2026-113", "Kira", "USD"
+    action: Mapped[str] = mapped_column(String(20), index=True)   # "create" | "update" | "delete"
+    # Değişen alanlar: {"amount": {"old": "100.00", "new": "150.00"}}
+    changes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Giriş sistemi (Faz 7 / Keycloak) gelince dolacak; şimdilik boş = "Sistem"
+    username: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
 
 
 class ExchangeRate(Base):

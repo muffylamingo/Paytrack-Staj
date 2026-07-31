@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, ReceiptText, BarChart3 } from 'lucide-react'
+import { LayoutDashboard, ReceiptText, BarChart3, History } from 'lucide-react'
 import { useLang } from '../context/LanguageContext'
 
 // Sadece PROJEYE lazım olan menü öğeleri (template'in gereksiz demo sayfaları yok)
@@ -8,6 +8,7 @@ const nav = [
   { to: '/panel', key: 'nav.dashboard', icon: LayoutDashboard },
   { to: '/faturalar', key: 'nav.invoices', icon: ReceiptText },
   { to: '/raporlar', key: 'nav.reports', icon: BarChart3 },
+  { to: '/gecmis', key: 'nav.history', icon: History },
 ]
 
 export default function Sidebar() {

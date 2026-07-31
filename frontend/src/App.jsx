@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Invoices from './pages/Invoices'
 import Reports from './pages/Reports'
+import History from './pages/History'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/panel" element={<Dashboard />} />
           <Route path="/faturalar" element={<Invoices />} />
           <Route path="/raporlar" element={<Reports />} />
+          <Route path="/gecmis" element={<History />} />
         </Route>
       </Routes>
     </BrowserRouter>
