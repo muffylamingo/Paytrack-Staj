@@ -3,6 +3,7 @@ export default {
   nav: {
     dashboard: 'Gösterge Paneli',
     invoices: 'Faturalar',
+    calendar: 'Ödeme Takvimi',
     reports: 'Raporlar',
     history: 'İşlem Geçmişi',
     role: 'Stajyer',
@@ -163,6 +164,19 @@ export default {
     rateSaved: '1 {currency} = {rate} ₺ olarak kaydedildi',
     rateSaveFailed: 'Kur kaydedilemedi',
     dataLoadFailed: 'Veriler yüklenemedi',
+  },
+  calendar: {
+    title: 'Ödeme Takvimi',
+    subtitle: 'Hangi gün ne ödenecek — son ödeme tarihlerine göre',
+    today: 'Bugün',
+    prevMonth: 'Önceki ay',
+    nextMonth: 'Sonraki ay',
+    monthTotal: 'Bu ayın toplamı',
+    invoiceCount: '{count} fatura',
+    more: '+{count} daha',
+    emptyMonth: 'Bu ayda son ödeme tarihi olan fatura yok.',
+    dayTitle: '{date} — {count} fatura',
+    legend: 'Renkler: durum',
   },
   history: {
     title: 'İşlem Geçmişi',

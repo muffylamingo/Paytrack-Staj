@@ -3,6 +3,7 @@ export default {
   nav: {
     dashboard: 'Dashboard',
     invoices: 'Invoices',
+    calendar: 'Payment Calendar',
     reports: 'Reports',
     history: 'Activity Log',
     role: 'Intern',
@@ -163,6 +164,19 @@ export default {
     rateSaved: '1 {currency} = {rate} ₺ saved',
     rateSaveFailed: 'Could not save the rate',
     dataLoadFailed: 'Could not load data',
+  },
+  calendar: {
+    title: 'Payment Calendar',
+    subtitle: 'What is due on which day — based on due dates',
+    today: 'Today',
+    prevMonth: 'Previous month',
+    nextMonth: 'Next month',
+    monthTotal: 'Total for this month',
+    invoiceCount: '{count} invoice(s)',
+    more: '+{count} more',
+    emptyMonth: 'No invoices are due in this month.',
+    dayTitle: '{date} — {count} invoice(s)',
+    legend: 'Colours: status',
   },
   history: {
     title: 'Activity Log',

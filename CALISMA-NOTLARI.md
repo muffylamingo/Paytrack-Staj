@@ -897,4 +897,68 @@ arayüzden eklenen fatura anında geçmişe düştü ✅ · TR/EN ✅ · konsol 
 
 ---
 
+## 📖 Oturum 16 — Ödeme Takvimi (Ekstra #11) 📅 ✅
+
+### Neler yaptık
+Faturaları **ay takvimi** üzerinde gösteren yeni sayfa. Hangi gün ne ödenecek tek bakışta görünüyor.
+Ay ileri/geri gezinme, "Bugün" düğmesi, ay toplamı, güne tıklayınca detay listesi.
+
+### 💡 Dikkat: Yeni tablo da yeni endpoint de GEREKMEDİ
+Mevcut `GET /invoices` verisini son ödeme tarihine göre gruplayıp gösteriyoruz.
+> **Aynı veri, farklı görünüm.** Bir veriyi listeden başka biçimlerde de sunabilmek arayüz
+> tasarımının önemli bir parçası — her yeni ekran için yeni tablo açmak gerekmez.
+
+### 📅 Takvim ızgarası nasıl kuruldu? (en öğretici kısım)
+```js
+const ilkGun    = new Date(yil, ay, 1)
+const gunSayisi = new Date(yil, ay + 1, 0).getDate()   // "sonraki ayın 0. günü" = bu ayın son günü
+const bosluk    = (ilkGun.getDay() + 6) % 7            // Pazartesi'yi 0 yapmak için kaydırma
+```
+1. **`new Date(yil, ay+1, 0)`** — JavaScript'te "0. gün" bir önceki ayın son günüdür. Şubat 28 mi 29
+   mu diye uğraşmadan ay uzunluğunu verir (**artık yılı da kendi halleder**). 🔎 *"javascript get days in month"*
+2. **`(getDay() + 6) % 7`** — `getDay()` haftayı **Pazar=0** ile sayar; bizde hafta **Pazartesi**
+   başladığı için kaydırıyoruz. Bu satır olmasa tüm takvim bir gün kayardı.
+3. **Baştaki boşluklar:** Ayın 1'i haftanın ortasındaysa önüne boş hücre koyulur.
+
+**Test ettik:**
+```
+Ağustos 2026 (1'i Cmt) : 5 boşluk + 31 gün = 36 hücre  ✅
+Temmuz 2026  (1'i Çar) : 2 boşluk + 31 gün = 33 hücre  ✅
+Şubat 2026   (1'i Paz) : 6 boşluk + 28 gün = 34 hücre  ✅
+Şubat 2024   ARTIK YIL : 3 boşluk + 29 gün = 32 hücre  ✅
+Kasım 2026   (1'i Paz) : 6 boşluk + 30 gün = 36 hücre  ✅
+```
+
+### 🐞 Kaçındığımız klasik tuzak: `toISOString()`
+Tarihi `"2026-08-15"` biçimine çevirmek için `toISOString().slice(0,10)` yazmak **yaygın bir hatadır**:
+`toISOString` **UTC**'ye çevirir, bizde saat farkı +3 olduğu için **gece yarısından önceki saatler bir
+önceki güne kayar**. Kendi `dateKey()` fonksiyonumuzu yazdık (yerel yıl/ay/gün).
+🔎 *"javascript toISOString timezone bug"*
+
+### Çalışman gereken konular
+1. **`useMemo`:** Izgara ve gruplama hesabı her render'da tekrar yapılmasın diye. Bağımlılık
+   değişmedikçe önceki sonuç kullanılır. 🔎 *"react usememo"*
+2. **Veriyi gruplama:** `{ "2026-08-15": [fatura, ...] }` sözlüğü. Her hücrede tüm listeyi taramak
+   yerine anahtardan doğrudan erişiyoruz (O(1)).
+3. **`Intl` ile gün adları:** "Pzt, Sal…" sözlüğe yazılmadı; `toLocaleDateString(locale, {weekday:'short'})`
+   ile üretiliyor → İngilizceye geçince otomatik "Mon, Tue…" oluyor. **Az kod, çok dil.**
+4. **CSS Grid:** `grid-cols-7` ile 7 sütunlu takvim.
+5. **Taşma yönetimi:** Bir günde çok fatura varsa ilk 2'si + "+N daha" gösteriliyor; tıklayınca
+   altta tam liste açılıyor.
+
+### 🐞 Bu oturumdaki ortam sorunları (ders niteliğinde)
+- **Vite kendiliğinden düşmüş** → sayfa `chrome-error://` verdi. Çözüm: `npm run dev` ile yeniden başlat.
+- **Backend + Docker de kapanmış** → `Failed to fetch`. **Önce `docker ps`, sonra port kontrolü!**
+- **"Ay yanlış görünüyor" sandım, meğer doğruymuş:** Takvim "Ağustos 2026" açtı, ben Temmuz bekliyordum
+  — oysa gerçekten **1 Ağustos olmuştu** (oturum uzundu, gün değişmişti).
+  > 🎓 Ders: Bir şeyi "hata" ilan etmeden önce **beklentinin kendisini doğrula.**
+
+### 🎤 Sunumda söyleyebileceğin cümle
+> *"Ödeme takvimi görünümünü yeni bir uç nokta eklemeden, mevcut fatura verisini son ödeme tarihine
+> göre gruplayarak yazdım. Takvim ızgarasını ayın ilk gününün haftanın kaçıncı günü olduğunu
+> hesaplayarak kuruyorum; ay uzunluğunu ve artık yılı Date nesnesinin kendisi çözüyor. Tarihleri
+> anahtara çevirirken toISOString kullanmadım, çünkü UTC'ye çevirip günü kaydırabiliyor."*
+
+---
+
 <!-- Sonraki oturumların notları buraya eklenecek -->
