@@ -39,6 +39,9 @@ services:
     volumes:
       # Realm tanımımız: hangi uygulama, hangi kullanıcılar... Elle kurmaya gerek yok.
       - ./keycloak/paytrack-realm.json:/opt/keycloak/data/import/paytrack-realm.json:ro
+      # Kendi giriş ekranı temamız (organic palet). Klasörü bağlıyoruz ki
+      # CSS'i değiştirince sadece sayfayı yenilemek yetsin.
+      - ./keycloak/themes/paytrack:/opt/keycloak/themes/paytrack:ro
     # NOT: Keycloak verisi için kalıcı volume KOYMADIK. İki sebep:
     #   1) Docker'ın oluşturduğu volume 'root' sahipli olduğu için Keycloak
     #      (root olmayan kullanıcıyla çalışır) içine yazamıyor -> başlatma hatası.

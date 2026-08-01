@@ -2,7 +2,10 @@
   "realm": "paytrack",
   "enabled": true,
   "displayName": "PayTrack",
-  "loginTheme": "keycloak",
+  "loginTheme": "paytrack",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["tr", "en"],
+  "defaultLocale": "tr",
   "accessTokenLifespan": 1800,
   "registrationAllowed": false,
   "clients": [

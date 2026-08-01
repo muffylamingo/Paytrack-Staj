@@ -979,4 +979,75 @@ Test: 3 hızlı geri → Mayıs ✅ · 5 hızlı ileri → Ekim ✅
 
 ---
 
+## 📖 Oturum 17 — Keycloak Girişi (Faz 7) 🔐 + özel giriş teması ✅
+
+### Neler yaptık
+PDF'in **en zor challenge görevi**: kullanıcı doğrulama. Giriş ekranını, şifre saklamayı,
+oturum yönetimini **biz yazmadık** — bu iş için tasarlanmış **Keycloak**'ı kullandık.
+
+| Katman | Dosya | Görevi |
+|---|---|---|
+| Docker | `docker-compose.yml` + `keycloak/paytrack-realm.json` | Keycloak servisi + realm'in otomatik kurulumu |
+| Backend | `app/auth.py` **(yeni)** | JWT imza doğrulama, korumalı endpoint'ler |
+| Frontend | `src/auth/keycloak.js`, `main.jsx`, `api/client.js` | Giriş akışı + token'ı her isteğe ekleme |
+| Tema | `keycloak/themes/paytrack/` **(yeni)** | Organic paletli özel giriş ekranı |
+
+### 🔑 Akış nasıl işliyor?
+```
+1. Kullanıcı uygulamayı açar
+2. React ÇİZİLMEDEN önce Keycloak'a sorulur: "giriş yapılmış mı?"
+3. Yapılmamışsa -> Keycloak'ın giriş sayfasına yönlendirilir
+4. Şifre Keycloak'a girilir  (UYGULAMAMIZ ŞİFREYİ HİÇ GÖRMEZ ✅)
+5. Keycloak imzalı bir "access token" (JWT) verir
+6. Frontend her istekte  Authorization: Bearer <token>  gönderir
+7. Backend token'ın İMZASINI doğrular -> içindeki bilgilere güvenir
+```
+
+### Çalışman gereken konular
+1. **JWT (JSON Web Token):** `header.payload.signature`. İçerik **şifreli değil**, herkes okuyabilir —
+   ama **imzalı** olduğu için kimse değiştiremez. 🔎 *"jwt nedir"*
+2. **Asimetrik imza / JWKS:** Keycloak açık anahtarlarını `/protocol/openid-connect/certs`
+   adresinde yayınlar; `PyJWKClient` indirip önbelleğe alır. 🔎 *"json web key set"*
+3. **OpenID Connect + PKCE:** Yetkilendirme kodu akışı; PKCE kodun yolda çalınmasını engeller.
+   🔎 *"openid connect authorization code flow"*, *"PKCE"*
+4. **Router seviyesinde koruma:** `include_router(..., dependencies=[Depends(get_current_user)])`
+   — tek tek her fonksiyona yazmaya göre hem kısa hem **unutmaya kapalı**.
+5. **`ContextVar`:** Her istek için ayrı değer tutan değişken. İşlem geçmişine "kim yaptı"
+   yazmak için kullandık. 🔎 *"python contextvars"*
+6. **axios interceptor:** Token'ı tek yerden bütün isteklere ekliyoruz. 🔎 *"axios interceptors"*
+7. **Keycloak teması:** `parent=keycloak` ile hazır şablonları miras alıp sadece CSS'i değiştirdik.
+   `styles` anahtarı ebeveynin listesini **ezdiği için** onun `css/login.css`'ini de listede tuttuk.
+
+### 🐞 Testlerde bulduğumuz 3 GERÇEK hata
+| Hata | Sebep | Çözüm |
+|---|---|---|
+| Sahte token **500** döndürüyordu (401 olmalı) | `get_signing_key_from_jwt`, `InvalidTokenError` değil **`PyJWKClientError`** fırlatıyor; yakalanmayınca sunucu hatasına dönüşüyordu | İki hata tipi de yakalandı |
+| İşlem geçmişinde kullanıcı hep **"Sistem"** | FastAPI **senkron** bağımlılıkları ayrı iş parçacığında çalıştırır; oradaki `ContextVar` yazması isteğe yansımaz | `get_current_user` → **`async def`** |
+| Aydınlık modda giriş kutusu **koyu ve okunmaz** | Yine `transition` + CSS değişkeni tuzağı (Oturum 12'deki hatanın aynısı) | Değişkene bağlı özelliklerden geçiş kaldırıldı |
+
+> 🎓 Üçüncü hata çok öğretici: **aynı hatayı ikinci kez yaptım.** Bir kere öğrenmek yetmiyor;
+> öğrendiğini bir **kural** hâline getirip her yerde uygulamak gerekiyor.
+> **Kural:** *Değeri CSS değişkeninden gelen bir özelliği asla `transition`'a koyma.*
+
+### 🔒 İndirme bağlantılarıyla ilgili fark ettiğimiz şey
+Excel dışa aktarma, şablon ve ek dosya indirme düz `<a href="...">` idi. Tarayıcı böyle bir isteğe
+**`Authorization` başlığı ekleyemez** — yani giriş sistemi gelince hepsi 401 alacaktı.
+Üçünü de axios ile (token'lı) indirip "blob" olarak kaydetmeye çevirdik.
+🔎 *"download file with authorization header javascript blob"*
+
+### 🧪 Test ettiklerimiz
+Token'sız tüm uç noktalar **401** ✅ · sağlık kontrolü açık **200** ✅ · kendi imzaladığım sahte
+JWT **401** ✅ · bozuk metinler **401** ✅ · gerçek token ile **200** ✅ · `/me` doğru bilgi ✅ ·
+yanlış şifre reddedildi ✅ · `mudur` ile yapılan işlem geçmişe **"mudur"** olarak yazıldı ✅ ·
+giriş sayfası **Türkçe** ✅ · tema hem aydınlık hem karanlık modda doğru ✅
+
+### 🎤 Sunumda söyleyebileceğin cümle
+> *"Kullanıcı doğrulamayı kendim yazmak yerine Keycloak ile OpenID Connect üzerinden çözdüm;
+> uygulama kullanıcının şifresini hiç görmüyor. Backend'de token'ların imzasını Keycloak'ın açık
+> anahtarlarıyla doğruluyorum ve korumayı router seviyesinde uyguladım, böylece yeni bir uç nokta
+> eklerken korumayı unutmak mümkün değil. Giriş ekranı için de uygulamanın tasarımıyla uyumlu
+> özel bir Keycloak teması yazdım."*
+
+---
+
 <!-- Sonraki oturumların notları buraya eklenecek -->

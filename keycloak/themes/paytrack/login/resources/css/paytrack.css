@@ -1,0 +1,346 @@
+/* ============================================================================
+   PayTrack — Keycloak giriş ekranı teması
+   Uygulamanın "Organic" paletiyle aynı: krem zemin, kil (terracotta) vurgu,
+   Fraunces başlık + Inter gövde.
+
+   NOT: Buradaki sınıf adlarını biz uydurmadık; Keycloak'ın hazır şablonundan
+   geliyorlar (#kc-header, .card-pf, #kc-login ...). Biz sadece üzerine yazıyoruz.
+   ============================================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap");
+
+:root {
+  --pt-cream-50: #fbf8f1;
+  --pt-cream-100: #f5efe3;
+  --pt-cream-200: #ece3d2;
+  --pt-cream-300: #dfd3bc;
+  --pt-clay-400: #d08b5e;
+  --pt-clay-500: #c2703f;
+  --pt-clay-600: #a85c30;
+  --pt-bark-400: #9a8b78;
+  --pt-bark-600: #6b5d4b;
+  --pt-bark-900: #2c2418;
+  --pt-sage: #7a8b5a;
+  --pt-error-bg: #f3d9d2;
+  --pt-error-tx: #a6402c;
+
+  /* Düğme gradyanı ayrı değişken:
+     Karanlık modda clay-600 bilerek DAHA AÇIK bir ton (yazı rengi olarak
+     kullanılıyor). Gradyanı doğrudan clay-400 -> clay-600 kursaydık koyu temada
+     iki uç birbirine çok yakın kalır ve gradyan düz renk gibi görünürdü. */
+  --pt-btn-from: #d08b5e;
+  --pt-btn-to: #a85c30;
+  --pt-btn-text: #fbf8f1;
+  --pt-btn-shadow: rgba(194, 112, 63, 0.55);
+}
+
+/* ---------- Sayfa zemini: yumuşak, katmanlı krem ---------- */
+html {
+  height: 100%;
+}
+
+body.login-pf,
+.login-pf body,
+body {
+  background: var(--pt-cream-100) !important;
+  font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+  color: var(--pt-bark-900);
+  min-height: 100%;
+}
+
+/* Arka planda çok hafif, dairesel iki ışık huzmesi — düz renkten daha "soft" durur */
+.login-pf-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(60rem 60rem at 15% -10%, rgba(194, 112, 63, 0.10), transparent 60%),
+    radial-gradient(45rem 45rem at 100% 100%, rgba(122, 139, 90, 0.10), transparent 55%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.login-pf-page {
+  position: relative;
+  z-index: 1;
+  padding-top: 4vh;
+  max-width: 30rem;
+}
+
+/* ---------- Üst başlık (logo alanı) ---------- */
+#kc-header {
+  margin-bottom: 1.25rem;
+}
+
+#kc-header-wrapper {
+  font-family: "Fraunces", Georgia, serif !important;
+  font-size: 2.1rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--pt-bark-900) !important;
+  text-transform: none !important;   /* varsayılan tema BÜYÜK HARF yapıyordu */
+  padding: 0 !important;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Başlığın üstüne ₺ rozetini CSS ile ekliyoruz (şablonu değiştirmeye gerek yok) */
+#kc-header-wrapper::before {
+  content: "₺";
+  display: block;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin: 0 auto 0.85rem;
+  border-radius: 1.1rem;
+  background: linear-gradient(135deg, var(--pt-clay-400), var(--pt-clay-600));
+  color: var(--pt-cream-50);
+  font-size: 1.6rem;
+  line-height: 3.25rem;
+  box-shadow: 0 10px 24px rgba(194, 112, 63, 0.30);
+}
+
+/* Başlığın altına küçük bir açıklama */
+#kc-header-wrapper::after {
+  content: "Kurumsal Fatura Yönetimi";
+  display: block;
+  margin-top: 0.35rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--pt-bark-400);
+}
+
+/* ---------- Kart ---------- */
+.card-pf {
+  background: var(--pt-cream-50) !important;
+  border: 1px solid var(--pt-cream-300) !important;
+  border-top: 1px solid var(--pt-cream-300) !important;   /* varsayılan mavi çizgiyi ez */
+  border-radius: 1.5rem !important;
+  padding: 2.25rem 2rem 2rem !important;
+  box-shadow: 0 24px 60px -20px rgba(44, 36, 24, 0.18), 0 2px 6px rgba(44, 36, 24, 0.04) !important;
+}
+
+#kc-page-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--pt-bark-900);
+  text-align: center;
+  margin: 0 0 1.5rem;
+}
+
+/* ---------- Form alanları ---------- */
+.form-group {
+  margin-bottom: 1.1rem;
+}
+
+.pf-c-form__label,
+.pf-c-form__label-text,
+#kc-form-login label {
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  color: var(--pt-bark-600) !important;
+  margin-bottom: 0.4rem !important;
+  display: block;
+}
+
+#kc-form-login input[type="text"],
+#kc-form-login input[type="password"],
+#kc-form-login input[type="email"],
+.pf-c-form-control {
+  width: 100%;
+  background: var(--pt-cream-100) !important;
+  border: 1px solid var(--pt-cream-300) !important;
+  border-radius: 0.85rem !important;
+  padding: 0.75rem 0.9rem !important;
+  height: auto !important;
+  font-size: 0.95rem !important;
+  color: var(--pt-bark-900) !important;
+  box-shadow: none !important;
+  /* DİKKAT: Buraya background-color / border-color geçişi EKLEME!
+     Değeri bir CSS değişkeninden gelen özelliği transition'a sokarsan, tema
+     (aydınlık/karanlık) değiştiğinde tarayıcı rengi yeniden hesaplamıyor ve
+     kutu ESKİ temanın renginde takılı kalıyor — aydınlık modda koyu zeminli,
+     okunmaz bir input oluyordu. Aynı tuzağa uygulamanın kendisinde de düşmüştük. */
+  transition: none;
+}
+
+#kc-form-login input::placeholder {
+  color: var(--pt-bark-400) !important;
+}
+
+#kc-form-login input[type="text"]:focus,
+#kc-form-login input[type="password"]:focus,
+.pf-c-form-control:focus {
+  outline: none !important;
+  background: var(--pt-cream-50) !important;
+  border-color: var(--pt-clay-400) !important;
+  /* Yumuşak odak halkası — sert mavi outline yerine */
+  box-shadow: 0 0 0 4px rgba(208, 139, 94, 0.18) !important;
+}
+
+/* "Şifreyi göster" düğmesi — kutuya yapışık, sade */
+.pf-c-input-group {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+  background: transparent !important;
+}
+
+.pf-c-input-group .pf-c-button,
+.pf-c-input-group button {
+  background: var(--pt-cream-100) !important;
+  border: 1px solid var(--pt-cream-300) !important;
+  border-radius: 0.85rem !important;
+  color: var(--pt-bark-400) !important;
+  padding: 0 0.85rem !important;
+  transition: none;   /* yukarıdaki nedenle: değişken tabanlı renkler animasyonlanmaz */
+}
+
+.pf-c-input-group .pf-c-button:hover {
+  color: var(--pt-clay-600) !important;
+  border-color: var(--pt-clay-400) !important;
+}
+
+/* ---------- Giriş düğmesi ---------- */
+#kc-form-buttons {
+  margin-top: 1.4rem;
+}
+
+#kc-login,
+.pf-c-button.pf-m-primary {
+  width: 100%;
+  background: linear-gradient(135deg, var(--pt-btn-from), var(--pt-btn-to)) !important;
+  border: none !important;
+  border-radius: 0.85rem !important;
+  padding: 0.8rem 1rem !important;
+  height: auto !important;
+  font-family: "Inter", sans-serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  color: var(--pt-btn-text) !important;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 10px 22px -8px var(--pt-btn-shadow);
+  /* Sadece değişkene bağlı OLMAYAN özellikleri animasyonluyoruz */
+  transition: transform 0.12s ease, filter 0.2s ease;
+}
+
+#kc-login:hover,
+.pf-c-button.pf-m-primary:hover {
+  filter: brightness(1.06);
+}
+
+#kc-login:active {
+  transform: translateY(1px);
+}
+
+/* ---------- "Beni hatırla" / "Şifremi unuttum" ---------- */
+.login-pf-settings {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  margin-bottom: 0;
+}
+
+.login-pf-settings a,
+#kc-info a,
+a {
+  color: var(--pt-clay-600) !important;
+  text-decoration: none;
+}
+
+.login-pf-settings a:hover,
+a:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Uyarı / hata kutuları ---------- */
+.alert,
+.pf-c-alert {
+  border-radius: 0.9rem !important;
+  border: 1px solid rgba(166, 64, 44, 0.25) !important;
+  background: var(--pt-error-bg) !important;
+  color: var(--pt-error-tx) !important;
+  font-size: 0.88rem;
+  padding: 0.75rem 1rem !important;
+  box-shadow: none !important;
+}
+
+.alert-success,
+.pf-m-success {
+  background: #e4ead5 !important;
+  border-color: rgba(82, 103, 47, 0.25) !important;
+  color: #52672f !important;
+}
+
+/* ---------- Dil seçici ---------- */
+#kc-locale {
+  margin-top: 0.25rem;
+}
+
+#kc-locale-dropdown a {
+  color: var(--pt-bark-600) !important;
+  font-size: 0.85rem;
+}
+
+/* ---------- Alt bilgi ---------- */
+#kc-info {
+  margin-top: 1.25rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--pt-bark-400);
+}
+
+/* ---------- 🌙 Karanlık mod: uygulamayla aynı "Organic Night" paleti ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --pt-cream-50: #231c15;
+    --pt-cream-100: #1a1410;
+    --pt-cream-200: #2e251b;
+    --pt-cream-300: #3d3225;
+    --pt-clay-400: #e09e6b;
+    --pt-clay-500: #d98a55;
+    --pt-clay-600: #eda271;
+    --pt-bark-400: #a2937e;
+    --pt-bark-600: #c3b49e;
+    --pt-bark-900: #f5ede0;
+    --pt-sage: #9db47a;
+    --pt-error-bg: #3d2019;
+    --pt-error-tx: #f19e88;
+
+    /* Koyu temada gradyan açıktan koyuya değil, AÇIK tonlar arasında gider;
+       yazı da koyu olur (uygulamadaki turuncu butonlarla aynı mantık). */
+    --pt-btn-from: #eda271;
+    --pt-btn-to: #c2703f;
+    --pt-btn-text: #231c15;
+    --pt-btn-shadow: rgba(0, 0, 0, 0.5);
+  }
+
+  #kc-header-wrapper::before {
+    color: #231c15;
+  }
+
+  /* Arka plandaki ışık huzmeleri koyu zeminde daha soluk olmalı */
+  .login-pf-page::before {
+    opacity: 0.55;
+  }
+
+  /* Tarayıcının kendi parçaları (kaydırma çubuğu, otomatik doldurma) da koyulaşsın */
+  html {
+    color-scheme: dark;
+  }
+}
+
+/* Küçük ekran */
+@media (max-width: 480px) {
+  .card-pf {
+    border-radius: 1.1rem !important;
+    padding: 1.6rem 1.25rem !important;
+  }
+  #kc-header-wrapper {
+    font-size: 1.8rem !important;
+  }
+}
