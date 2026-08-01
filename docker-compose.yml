@@ -19,6 +19,33 @@ services:
     volumes:
       - paytrack_pgdata:/var/lib/postgresql/data   # veriyi kalıcı sakla (container silinse de kaybolmasın)
 
+  # ==========================================================================
+  #  Keycloak — Kullanıcı doğrulama sunucusu (Faz 7 / PDF challenge görevi)
+  #  Giriş ekranını, şifreleri ve oturumları BİZ yazmıyoruz; bu iş için
+  #  tasarlanmış hazır ve güvenli bir sistemi kullanıyoruz.
+  # ==========================================================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: paytrack_keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm    # geliştirme modu + realm'i dosyadan otomatik kur
+    environment:
+      # Keycloak yönetici paneli girişi (http://localhost:8080)
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"                      # Keycloak arayüzü (backend 8000, frontend 5173)
+    volumes:
+      # Realm tanımımız: hangi uygulama, hangi kullanıcılar... Elle kurmaya gerek yok.
+      - ./keycloak/paytrack-realm.json:/opt/keycloak/data/import/paytrack-realm.json:ro
+    # NOT: Keycloak verisi için kalıcı volume KOYMADIK. İki sebep:
+    #   1) Docker'ın oluşturduğu volume 'root' sahipli olduğu için Keycloak
+    #      (root olmayan kullanıcıyla çalışır) içine yazamıyor -> başlatma hatası.
+    #   2) Zaten realm her açılışta paytrack-realm.json'dan kuruluyor; yani
+    #      kullanıcılar ve ayarlar HER ZAMAN aynı = tekrarlanabilir kurulum.
+    # Gerçek bir üretim kurulumunda Keycloak kendi PostgreSQL veritabanını kullanır.
+
 # Docker'ın veriyi sakladığı "kalıcı disk alanı"
 volumes:
   paytrack_pgdata:

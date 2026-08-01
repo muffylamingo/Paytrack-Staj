@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Paperclip, Upload, Download, X, Loader2 } from 'lucide-react'
-import { uploadAttachment, deleteAttachment, attachmentUrl } from '../api/invoices'
+import { uploadAttachment, deleteAttachment, downloadAttachment } from '../api/invoices'
 import { useToast } from '../context/ToastContext'
 import { useLang } from '../context/LanguageContext'
 
@@ -77,17 +77,15 @@ export default function AttachmentCell({ invoice, onChanged }) {
   // --- Dosya VAR: indir + kaldır ---
   return (
     <div className="flex items-center justify-end gap-1">
-      <a
-        href={attachmentUrl(invoice.id)}
-        target="_blank"
-        rel="noreferrer"
+      <button
+        onClick={() => downloadAttachment(invoice.id, invoice.attachment_name)}
         title={t('attachment.downloadTitle', { name: invoice.attachment_name })}
         className="inline-flex max-w-[130px] items-center gap-1 rounded-lg border border-cream-300 px-2 py-1 text-xs text-bark-700 transition hover:border-clay-400 hover:text-clay-600"
       >
         <Paperclip size={13} className="shrink-0" />
         <span className="truncate">{invoice.attachment_name}</span>
         <Download size={12} className="shrink-0 opacity-60" />
-      </a>
+      </button>
       <button
         onClick={handleRemove}
         title={t('attachment.remove')}

@@ -6,10 +6,11 @@ export default {
     calendar: 'Payment Calendar',
     reports: 'Reports',
     history: 'Activity Log',
-    role: 'Intern',
+    appName: 'Invoice Management',
   },
   topbar: {
     welcome: 'Welcome 👋',
+    logout: 'Log out',
   },
   common: {
     loading: 'Loading…',

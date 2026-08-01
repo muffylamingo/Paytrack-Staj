@@ -1,4 +1,4 @@
-import { api } from './client'
+import { api, dosyaIndir } from './client'
 
 // Faturaları getir (opsiyonel filtreler: { status, category, vendor })
 export async function getInvoices(params = {}) {
@@ -39,9 +39,15 @@ export async function importInvoices(file) {
   return data // { imported, failed, errors: [{row, message}] }
 }
 
-// Boş şablonun indirme adresi
-export function templateUrl() {
-  return `${api.defaults.baseURL}/invoices/import-template`
+// Boş şablonu indir (token gerektiği için düz <a href> ile olmaz)
+export function downloadTemplate() {
+  return dosyaIndir('/invoices/import-template', 'fatura-sablonu.xlsx')
+}
+
+// Faturaları Excel olarak indir (mevcut filtre/sıralama ile)
+export function downloadExport(params = {}) {
+  const qs = new URLSearchParams(params).toString()
+  return dosyaIndir(`/invoices/export?${qs}`, 'faturalar.xlsx')
 }
 
 // --- Ek dosya (dekont) işlemleri ---
@@ -61,7 +67,7 @@ export async function deleteAttachment(id) {
   return data
 }
 
-// İndirme bağlantısı (tarayıcı doğrudan açsın diye tam URL)
-export function attachmentUrl(id) {
-  return `${api.defaults.baseURL}/invoices/${id}/attachment`
+// Ek dosyayı indir (token'lı)
+export function downloadAttachment(id, name) {
+  return dosyaIndir(`/invoices/${id}/attachment`, name || 'ek-dosya')
 }

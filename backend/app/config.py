@@ -18,6 +18,14 @@ class Settings(BaseSettings):
     # .env içindeki DATABASE_URL bu alana OTOMATİK okunur.
     database_url: str
 
+    # --- Keycloak (Faz 7) ---
+    keycloak_url: str = "http://localhost:8080"
+    keycloak_realm: str = "paytrack"
+    keycloak_client_id: str = "paytrack-frontend"
+    # Geliştirirken doğrulamayı kapatmak için .env'e AUTH_DISABLED=true yazılabilir.
+    # ÜRETİMDE ASLA true olmamalı.
+    auth_disabled: bool = False
+
     model_config = SettingsConfigDict(
         env_file=BACKEND_DIR / ".env",   # hangi .env dosyası okunacak
         env_file_encoding="utf-8",

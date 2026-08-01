@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Plus, Search, Check, ChevronUp, ChevronDown, ChevronsUpDown, Download, Repeat, Upload, FileDown } from 'lucide-react'
-import { getInvoices, payInvoice, generateRecurring, importInvoices, templateUrl } from '../api/invoices'
+import { getInvoices, payInvoice, generateRecurring, importInvoices, downloadTemplate, downloadExport } from '../api/invoices'
 import ImportResultModal from '../components/ImportResultModal'
 import { formatCurrency, formatDate, statusBadge, isNearDue } from '../lib/format'
 import InvoiceFormModal from '../components/InvoiceFormModal'
@@ -60,19 +60,19 @@ export default function Invoices() {
     }
   }
 
-  // Excel indir: mevcut filtre/sıralama ile export endpoint'ine yönlendir (tarayıcı dosyayı indirir)
-  function handleExport() {
-    const params = new URLSearchParams({ sort, order })
-    if (status) params.set('status', status)
-    if (category) params.set('category', category)
-    if (search) params.set('vendor', search)
-    const a = document.createElement('a')
-    a.href = `http://localhost:8000/invoices/export?${params.toString()}`
-    a.download = 'faturalar.xlsx'
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
+  // Excel indir: mevcut filtre/sıralama ile.
+  // Artık düz bir <a href> değil — korumalı endpoint'e token göndermek gerekiyor.
+  async function handleExport() {
+    const params = { sort, order }
+    if (status) params.status = status
+    if (category) params.category = category
+    if (search) params.vendor = search
     toast.info(t('toast.exporting', { count: invoices.length }))
+    try {
+      await downloadExport(params)
+    } catch {
+      toast.error(t('toast.loadFailed'))
+    }
   }
 
   // Excel'den toplu yükle
@@ -177,13 +177,13 @@ export default function Invoices() {
           >
             <Upload size={18} /> {importing ? t('invoices.importing') : t('invoices.importExcel')}
           </button>
-          <a
-            href={templateUrl()}
+          <button
+            onClick={() => downloadTemplate()}
             title={t('invoices.templateTitle')}
             className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50 px-3 py-2.5 text-sm font-medium text-bark-400 transition hover:bg-cream-200 hover:text-bark-700"
           >
             <FileDown size={18} />
-          </a>
+          </button>
           <button
             onClick={handleGenerate}
             disabled={generating}

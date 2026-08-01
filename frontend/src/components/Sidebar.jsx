@@ -45,15 +45,13 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Alt: kullanıcı */}
-      <div className="flex items-center gap-3 border-t border-cream-300 px-4 py-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-bark-600 text-xs font-semibold text-cream-50">
-          OK
-        </div>
-        <div className="text-sm">
-          <div className="font-medium text-bark-900">ODAKENT</div>
-          <div className="text-xs text-bark-400">{t('nav.role')}</div>
-        </div>
+      {/* Alt: kurum etiketi.
+          NOT: Burada eskiden sabit "Stajyer" yazıyordu; giriş sistemi gelince
+          yanıltıcı oldu (müdür olarak girsen bile "Stajyer" görünüyordu).
+          Kullanıcı kimliği artık üst barda, token'dan geliyor. */}
+      <div className="border-t border-cream-300 px-6 py-4">
+        <div className="text-sm font-medium text-bark-900">ODAKENT</div>
+        <div className="text-xs text-bark-400">{t('nav.appName')}</div>
       </div>
     </aside>
   )

@@ -6,10 +6,11 @@ export default {
     calendar: 'Ödeme Takvimi',
     reports: 'Raporlar',
     history: 'İşlem Geçmişi',
-    role: 'Stajyer',
+    appName: 'Fatura Yönetimi',
   },
   topbar: {
     welcome: 'Hoş geldin 👋',
+    logout: 'Çıkış yap',
   },
   common: {
     loading: 'Yükleniyor…',

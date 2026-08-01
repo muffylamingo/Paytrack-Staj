@@ -22,6 +22,7 @@ from sqlalchemy import event, inspect
 from sqlalchemy.orm import Session
 
 from app import models
+from app.auth import current_username
 
 # Hangi tablolar izlensin? (AuditLog'un kendisi burada YOK -> sonsuz döngü olmaz)
 TRACKED: dict[type, str] = {
@@ -89,7 +90,9 @@ def _log(session: Session, obj, action: str, changes: dict | None = None) -> Non
             entity_label=_label(obj),
             action=action,
             changes=json.dumps(changes, ensure_ascii=False) if changes else None,
-            username=None,  # Keycloak (Faz 7) gelince buraya kullanıcı adı yazılacak
+            # O anki isteğin kullanıcısı (auth.py doldurur). Bir istek dışında
+            # (örn. seed script'i) çalışıyorsak None kalır -> arayüzde "Sistem".
+            username=current_username.get(),
         )
     )
 

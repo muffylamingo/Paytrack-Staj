@@ -1,0 +1,48 @@
+{
+  "realm": "paytrack",
+  "enabled": true,
+  "displayName": "PayTrack",
+  "loginTheme": "keycloak",
+  "accessTokenLifespan": 1800,
+  "registrationAllowed": false,
+  "clients": [
+    {
+      "clientId": "paytrack-frontend",
+      "name": "PayTrack Frontend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:5173/*"],
+      "webOrigins": ["http://localhost:5173"],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "stajyer",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "ODAKENT",
+      "lastName": "Stajyer",
+      "email": "stajyer@odakent.local",
+      "credentials": [
+        { "type": "password", "value": "paytrack123", "temporary": false }
+      ]
+    },
+    {
+      "username": "mudur",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Finans",
+      "lastName": "Müdürü",
+      "email": "mudur@odakent.local",
+      "credentials": [
+        { "type": "password", "value": "paytrack123", "temporary": false }
+      ]
+    }
+  ]
+}
