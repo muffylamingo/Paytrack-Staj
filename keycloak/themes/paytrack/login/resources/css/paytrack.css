@@ -60,11 +60,29 @@ body {
   z-index: 0;
 }
 
+/* Sayfa kabı — DİKKAT: sadece max-width vermek yetmez!
+   Blok elemanlar varsayılan olarak SOLA dayanır; ortalamak için
+   "margin-left/right: auto" şart. (İlk denemede bunu unutup kartı
+   ekranın soluna yapıştırmıştım.) */
 .login-pf-page {
   position: relative;
   z-index: 1;
-  padding-top: 4vh;
-  max-width: 30rem;
+  width: 100%;
+  max-width: 27rem;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  float: none !important;                 /* PatternFly'ın float kuralını iptal et */
+  padding: 7vh 1.25rem 4vh !important;
+  box-sizing: border-box;
+}
+
+/* Dikey olarak da ortada dursun (uzun ekranlarda tepede asılı kalmasın) */
+body.login-pf,
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
 }
 
 /* ---------- Üst başlık (logo alanı) ---------- */
@@ -113,12 +131,15 @@ body {
 
 /* ---------- Kart ---------- */
 .card-pf {
+  width: 100%;
+  margin: 0 auto !important;              /* kart da ortada dursun */
   background: var(--pt-cream-50) !important;
   border: 1px solid var(--pt-cream-300) !important;
   border-top: 1px solid var(--pt-cream-300) !important;   /* varsayılan mavi çizgiyi ez */
   border-radius: 1.5rem !important;
   padding: 2.25rem 2rem 2rem !important;
   box-shadow: 0 24px 60px -20px rgba(44, 36, 24, 0.18), 0 2px 6px rgba(44, 36, 24, 0.04) !important;
+  box-sizing: border-box;
 }
 
 #kc-page-title {
@@ -276,14 +297,48 @@ a:hover {
   color: #52672f !important;
 }
 
-/* ---------- Dil seçici ---------- */
+/* ---------- Dil seçici (kartın sağ üstünde, sade) ---------- */
 #kc-locale {
-  margin-top: 0.25rem;
+  display: flex;
+  justify-content: flex-end;
+  margin: -0.5rem 0 0.25rem;
+}
+
+#kc-current-locale-link {
+  background: var(--pt-cream-100) !important;
+  border: 1px solid var(--pt-cream-300) !important;
+  border-radius: 999px !important;
+  padding: 0.2rem 0.7rem !important;
+  font-size: 0.78rem !important;
+  color: var(--pt-bark-600) !important;
+  cursor: pointer;
+}
+
+#kc-current-locale-link:hover {
+  color: var(--pt-clay-600) !important;
+  border-color: var(--pt-clay-400) !important;
+}
+
+#kc-locale-dropdown ul,
+#kc-locale-dropdown .dropdown-menu {
+  background: var(--pt-cream-50) !important;
+  border: 1px solid var(--pt-cream-300) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.25rem !important;
+  box-shadow: 0 12px 28px -12px rgba(44, 36, 24, 0.35) !important;
 }
 
 #kc-locale-dropdown a {
   color: var(--pt-bark-600) !important;
   font-size: 0.85rem;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.6rem !important;
+  display: block;
+}
+
+#kc-locale-dropdown a:hover {
+  background: var(--pt-cream-200) !important;
+  text-decoration: none;
 }
 
 /* ---------- Alt bilgi ---------- */
