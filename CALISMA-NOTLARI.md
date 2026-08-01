@@ -946,6 +946,24 @@ Tarihi `"2026-08-15"` biçimine çevirmek için `toISOString().slice(0,10)` yazm
 5. **Taşma yönetimi:** Bir günde çok fatura varsa ilk 2'si + "+N daha" gösteriliyor; tıklayınca
    altta tam liste açılıyor.
 
+### 🐞 Yakaladığımız GERÇEK hata: hızlı tıklamada ay kaymıyordu
+Ay okuna **arka arkaya iki kez** tıkladığımda takvim sadece **bir ay** kayıyordu.
+
+```jsx
+// YANLIŞ — iki tıklama da AYNI eski cursor'ı okur
+setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + fark, 1))
+
+// DOĞRU — fonksiyon biçimi her zaman EN GÜNCEL değeri alır
+setCursor((c) => new Date(c.getFullYear(), c.getMonth() + fark, 1))
+```
+
+**Sebep:** React durum güncellemelerini **toplu işler (batching)**. Aynı anda iki `setCursor`
+çağrılırsa ikisi de o render'daki `cursor` değerini görür → biri diğerini ezer.
+**Kural:** Yeni değer eskisine BAĞLIYSA (sayaç, tarih kaydırma, liste ekleme) **daima fonksiyon
+biçimini** kullan. 🔎 *"react setstate functional update"*, *"react batching stale state"*
+
+Test: 3 hızlı geri → Mayıs ✅ · 5 hızlı ileri → Ekim ✅
+
 ### 🐞 Bu oturumdaki ortam sorunları (ders niteliğinde)
 - **Vite kendiliğinden düşmüş** → sayfa `chrome-error://` verdi. Çözüm: `npm run dev` ile yeniden başlat.
 - **Backend + Docker de kapanmış** → `Failed to fetch`. **Önce `docker ps`, sonra port kontrolü!**

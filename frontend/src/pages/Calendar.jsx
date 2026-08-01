@@ -101,7 +101,11 @@ export default function Calendar() {
   const ayBasligi = cursor.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
   const kaydir = (fark) => {
     setSelected(null)
-    setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + fark, 1))
+    // DİKKAT: setCursor(new Date(cursor...)) YAZMA!
+    // React durum güncellemelerini toplu işler; hızlıca iki kez tıklarsan iki
+    // çağrı da AYNI eski `cursor` değerini okur ve takvim tek ay kayar.
+    // Fonksiyon biçimi (c => ...) her zaman EN GÜNCEL değeri alır.
+    setCursor((c) => new Date(c.getFullYear(), c.getMonth() + fark, 1))
   }
 
   return (
