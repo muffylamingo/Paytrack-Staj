@@ -68,11 +68,11 @@ body {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 27rem;
+  max-width: 32rem;                       /* kart genişletildi (önce 27rem) */
   margin-left: auto !important;
   margin-right: auto !important;
   float: none !important;                 /* PatternFly'ın float kuralını iptal et */
-  padding: 7vh 1.25rem 4vh !important;
+  padding: 6vh 1.25rem 4vh !important;
   box-sizing: border-box;
 }
 
@@ -136,24 +136,24 @@ body {
   background: var(--pt-cream-50) !important;
   border: 1px solid var(--pt-cream-300) !important;
   border-top: 1px solid var(--pt-cream-300) !important;   /* varsayılan mavi çizgiyi ez */
-  border-radius: 1.5rem !important;
-  padding: 2.25rem 2rem 2rem !important;
+  border-radius: 1.75rem !important;
+  padding: 2.75rem 2.5rem 2.5rem !important;   /* daha ferah iç boşluk */
   box-shadow: 0 24px 60px -20px rgba(44, 36, 24, 0.18), 0 2px 6px rgba(44, 36, 24, 0.04) !important;
   box-sizing: border-box;
 }
 
 #kc-page-title {
   font-family: "Fraunces", Georgia, serif;
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: var(--pt-bark-900);
   text-align: center;
-  margin: 0 0 1.5rem;
+  margin: 0 0 1.75rem;
 }
 
 /* ---------- Form alanları ---------- */
 .form-group {
-  margin-bottom: 1.1rem;
+  margin-bottom: 1.25rem;
 }
 
 .pf-c-form__label,
@@ -201,27 +201,57 @@ body {
   box-shadow: 0 0 0 4px rgba(208, 139, 94, 0.18) !important;
 }
 
-/* "Şifreyi göster" düğmesi — kutuya yapışık, sade */
+/* ---------- "Şifreyi göster" düğmesi ----------
+   Önce input'un YANINDA ayrı bir kutu gibi duruyordu ve kopuk görünüyordu.
+   Şimdi kutunun İÇİNE, sağ kenara yerleştiriyoruz (modern kalıp):
+   grubu "position: relative" yapıp düğmeyi mutlak konumlandırıyoruz. */
 .pf-c-input-group {
-  display: flex;
-  align-items: stretch;
-  gap: 0.4rem;
+  position: relative;
+  display: block !important;
+  gap: 0 !important;
   background: transparent !important;
+}
+
+.pf-c-input-group #password,
+.pf-c-input-group .pf-c-form-control {
+  width: 100%;
+  padding-right: 3.1rem !important;   /* düğmenin altında kalmasın */
 }
 
 .pf-c-input-group .pf-c-button,
 .pf-c-input-group button {
-  background: var(--pt-cream-100) !important;
-  border: 1px solid var(--pt-cream-300) !important;
-  border-radius: 0.85rem !important;
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0.65rem !important;
   color: var(--pt-bark-400) !important;
-  padding: 0 0.85rem !important;
-  transition: none;   /* yukarıdaki nedenle: değişken tabanlı renkler animasyonlanmaz */
+  cursor: pointer;
+  transition: none;   /* değişken tabanlı renkler animasyonlanmaz */
 }
 
-.pf-c-input-group .pf-c-button:hover {
+.pf-c-input-group button i {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.pf-c-input-group .pf-c-button:hover,
+.pf-c-input-group button:hover {
+  background: var(--pt-cream-200) !important;
   color: var(--pt-clay-600) !important;
-  border-color: var(--pt-clay-400) !important;
+}
+
+.pf-c-input-group button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(208, 139, 94, 0.35);
 }
 
 /* ---------- Giriş düğmesi ---------- */
@@ -297,48 +327,75 @@ a:hover {
   color: #52672f !important;
 }
 
-/* ---------- Dil seçici (kartın sağ üstünde, sade) ---------- */
+/* ---------- Dil seçici: açılır menü DEĞİL, TR | EN anahtarı ----------
+   Keycloak varsayılan olarak bir "dropdown" üretir (tıkla-aç, liste in-sin).
+   Uygulamanın üst barındaki TR|EN anahtarıyla aynı görünsün diye:
+     1. Açan düğmeyi gizliyoruz
+     2. Listeyi HER ZAMAN görünür, yatay bir şerit yapıyoruz
+     3. Uzun etiketleri ("İngilizce (English)") kısa kodlara çeviriyoruz
+   Şablona hiç dokunmadan, sadece CSS ile. */
 #kc-locale {
   display: flex;
   justify-content: flex-end;
-  margin: -0.5rem 0 0.25rem;
+  margin: -0.75rem 0 0.5rem;
 }
 
+/* 1) "Türkçe ˅" açma düğmesini gizle */
 #kc-current-locale-link {
+  display: none !important;
+}
+
+/* 2) Listeyi her zaman göster, yatay şerit yap */
+#kc-locale-dropdown ul,
+#language-switch1 {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: static !important;
+  transform: none !important;
+  float: none !important;
+  min-width: 0 !important;
+  width: auto !important;
+  gap: 0.15rem;
+  margin: 0 !important;
+  padding: 0.2rem !important;
+  list-style: none;
   background: var(--pt-cream-100) !important;
   border: 1px solid var(--pt-cream-300) !important;
   border-radius: 999px !important;
-  padding: 0.2rem 0.7rem !important;
-  font-size: 0.78rem !important;
-  color: var(--pt-bark-600) !important;
-  cursor: pointer;
+  box-shadow: none !important;
 }
 
-#kc-current-locale-link:hover {
-  color: var(--pt-clay-600) !important;
-  border-color: var(--pt-clay-400) !important;
+#language-switch1 li {
+  list-style: none;
+  margin: 0;
 }
 
-#kc-locale-dropdown ul,
-#kc-locale-dropdown .dropdown-menu {
-  background: var(--pt-cream-50) !important;
-  border: 1px solid var(--pt-cream-300) !important;
-  border-radius: 0.75rem !important;
-  padding: 0.25rem !important;
-  box-shadow: 0 12px 28px -12px rgba(44, 36, 24, 0.35) !important;
-}
-
-#kc-locale-dropdown a {
-  color: var(--pt-bark-600) !important;
-  font-size: 0.85rem;
-  border-radius: 0.5rem;
-  padding: 0.35rem 0.6rem !important;
+#language-switch1 a {
   display: block;
+  padding: 0.25rem 0.7rem !important;
+  border-radius: 999px !important;
+  font-size: 0 !important;              /* uzun etiketi gizle (aşağıda kısası basılıyor) */
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--pt-bark-400) !important;
+  text-decoration: none !important;
 }
 
-#kc-locale-dropdown a:hover {
+/* 3) Kısa kodlar — hangi bağlantı olduğunu href'ten anlıyoruz */
+#language-switch1 a[href*="kc_locale=tr"]::after { content: "TR"; font-size: 0.72rem; }
+#language-switch1 a[href*="kc_locale=en"]::after { content: "EN"; font-size: 0.72rem; }
+
+#language-switch1 a:hover {
+  color: var(--pt-bark-900) !important;
   background: var(--pt-cream-200) !important;
-  text-decoration: none;
+}
+
+/* Aktif dil: <html lang="..."> hangisiyse o vurgulanır */
+html[lang="tr"] #language-switch1 a[href*="kc_locale=tr"],
+html[lang="en"] #language-switch1 a[href*="kc_locale=en"] {
+  background: var(--pt-clay-500) !important;
+  color: var(--pt-btn-text) !important;
 }
 
 /* ---------- Alt bilgi ---------- */
