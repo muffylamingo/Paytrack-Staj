@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
+from app.auth import yonetim
 from app.database import get_db
 
 router = APIRouter(prefix="/budgets", tags=["Bütçeler"])
@@ -24,7 +25,7 @@ def list_budgets(db: Session = Depends(get_db)):
     return crud.get_budget_status(db)
 
 
-@router.put("/{category}", response_model=schemas.BudgetStatus)
+@router.put("/{category}", response_model=schemas.BudgetStatus, dependencies=[Depends(yonetim)])
 def set_budget(
     category: schemas.Category,
     data: schemas.BudgetIn,
@@ -38,7 +39,7 @@ def set_budget(
     return next(s for s in statuses if s["category"] == category.value)
 
 
-@router.delete("/{category}", status_code=204)
+@router.delete("/{category}", status_code=204, dependencies=[Depends(yonetim)])
 def remove_budget(category: schemas.Category, db: Session = Depends(get_db)):
     """Kategorinin bütçesini kaldırır."""
     budget = crud.get_budget(db, category.value)

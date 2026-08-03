@@ -5,6 +5,7 @@ import { getRates, setRate } from '../api/rates'
 import { useToast } from '../context/ToastContext'
 import { useLang } from '../context/LanguageContext'
 import BudgetBar from '../components/BudgetBar'
+import { yonetebilirMi } from '../auth/keycloak'
 
 const CATEGORIES = ['Enerji', 'Yazılım', 'Kira', 'Mutfak']
 
@@ -18,6 +19,7 @@ export default function Reports() {
   const [rateDrafts, setRateDrafts] = useState({})
   const toast = useToast()
   const { t, locale } = useLang()
+  const yonetebilir = yonetebilirMi()   // bütçe/kur değiştirmek müdür yetkisi
 
   async function load() {
     setLoading(true)
@@ -102,6 +104,12 @@ export default function Reports() {
         </div>
       )}
 
+      {!yonetebilir && (
+        <div className="mb-4 rounded-2xl border border-cream-300 bg-cream-100 px-4 py-2.5 text-sm text-bark-600">
+          👁️ {t('common.readOnly')}
+        </div>
+      )}
+
       {loading ? (
         <p className="text-bark-400">{t('common.loading')}</p>
       ) : (
@@ -126,13 +134,14 @@ export default function Reports() {
                         value={drafts[cat] ?? ''}
                         onChange={(e) => setDrafts({ ...drafts, [cat]: e.target.value })}
                         onKeyDown={(e) => e.key === 'Enter' && handleSave(cat)}
+                        disabled={!yonetebilir}
                         className="w-full rounded-xl border border-cream-300 bg-cream-100 py-2 pl-3 pr-8 text-sm text-bark-900 outline-none focus:border-clay-400"
                       />
                       <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-bark-400">₺</span>
                     </div>
                     <button
                       onClick={() => handleSave(cat)}
-                      disabled={savingCat === cat}
+                      disabled={savingCat === cat || !yonetebilir}
                       title={t('common.save')}
                       className="rounded-lg bg-clay-500 p-2 text-cream-50 transition hover:bg-clay-600 disabled:opacity-60"
                     >
@@ -140,7 +149,7 @@ export default function Reports() {
                     </button>
                     <button
                       onClick={() => handleDelete(cat)}
-                      disabled={!mevcut}
+                      disabled={!mevcut || !yonetebilir}
                       title={mevcut ? t('reports.removeBudget') : t('reports.noBudgetForCategory')}
                       className="rounded-lg p-2 text-bark-400 transition hover:bg-overdue-bg hover:text-overdue-tx disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-bark-400"
                     >
@@ -172,6 +181,7 @@ export default function Reports() {
                         value={rateDrafts[r.currency] ?? ''}
                         onChange={(e) => setRateDrafts({ ...rateDrafts, [r.currency]: e.target.value })}
                         onKeyDown={(e) => e.key === 'Enter' && handleSaveRate(r.currency)}
+                        disabled={!yonetebilir}
                         className="w-full rounded-xl border border-cream-300 bg-cream-100 py-2 pl-3 pr-8 text-sm text-bark-900 outline-none focus:border-clay-400"
                       />
                       <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-bark-400">₺</span>
@@ -183,6 +193,7 @@ export default function Reports() {
                     )}
                     <button
                       onClick={() => handleSaveRate(r.currency)}
+                      disabled={!yonetebilir}
                       title={t('reports.saveRate')}
                       className="rounded-lg bg-clay-500 p-2 text-cream-50 transition hover:bg-clay-600"
                     >

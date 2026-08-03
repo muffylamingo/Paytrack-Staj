@@ -2,7 +2,7 @@ import { LogOut } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import LanguageToggle from './LanguageToggle'
 import { useLang } from '../context/LanguageContext'
-import { keycloak } from '../auth/keycloak'
+import { keycloak, ROL_MUDUR, ROL_MUHASEBE, yetkiliMi } from '../auth/keycloak'
 
 // Kullanıcının baş harfleri: "ODAKENT Stajyer" -> "OS"
 function basHarfler(ad) {
@@ -22,6 +22,13 @@ export default function Topbar() {
   // (Token zaten adı, kullanıcı adını ve e-postayı taşıyor.)
   const profil = keycloak.tokenParsed || {}
   const adSoyad = profil.name || profil.preferred_username || '?'
+
+  // Rol rozeti — kullanıcı hangi yetkiyle girdiğini görsün
+  const rolAdi = yetkiliMi(ROL_MUDUR)
+    ? t('topbar.roleMudur')
+    : yetkiliMi(ROL_MUHASEBE)
+      ? t('topbar.roleMuhasebe')
+      : t('topbar.roleGoruntuleyici')
 
   // Tarih de seçili dile göre biçimleniyor:
   //   tr-TR -> "31 Temmuz Cuma"   ·   en-US -> "Friday, July 31"
@@ -52,7 +59,12 @@ export default function Topbar() {
           </div>
           <div className="hidden text-sm sm:block">
             <div className="font-medium leading-tight text-bark-900">{adSoyad}</div>
-            <div className="text-xs leading-tight text-bark-400">{profil.preferred_username}</div>
+            <div className="text-xs leading-tight text-bark-400">
+              {profil.preferred_username}
+              <span className="ml-1.5 rounded-full bg-cream-200 px-1.5 py-0.5 text-[10px] font-medium text-bark-600">
+                {rolAdi}
+              </span>
+            </div>
           </div>
           <button
             onClick={() => keycloak.logout({ redirectUri: window.location.origin })}

@@ -11,8 +11,12 @@ export default {
   topbar: {
     welcome: 'Hoş geldin 👋',
     logout: 'Çıkış yap',
+    roleMudur: 'Müdür',
+    roleMuhasebe: 'Muhasebe',
+    roleGoruntuleyici: 'Görüntüleyici',
   },
   common: {
+    readOnly: 'Salt okunur yetkiniz var — değişiklik yapamazsınız.',
     loading: 'Yükleniyor…',
     save: 'Kaydet',
     saving: 'Kaydediliyor…',
@@ -165,6 +169,7 @@ export default {
     rateSaved: '1 {currency} = {rate} ₺ olarak kaydedildi',
     rateSaveFailed: 'Kur kaydedilemedi',
     dataLoadFailed: 'Veriler yüklenemedi',
+    noPermission: 'Bu işlem için yetkiniz yok',
   },
   calendar: {
     title: 'Ödeme Takvimi',

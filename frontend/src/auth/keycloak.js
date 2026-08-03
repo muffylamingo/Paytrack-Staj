@@ -18,6 +18,31 @@ export const keycloak = new Keycloak({
   clientId: 'paytrack-frontend',
 })
 
+/* ---------------- Roller (Ekstra: yetkilendirme) ----------------
+   Roller token'ın içinde "realm_access.roles" altında gelir.
+
+   ÖNEMLİ: Buradaki kontroller sadece ARAYÜZ İÇİNDİR (kullanıcıya
+   yapamayacağı düğmeyi göstermemek için). GERÇEK güvenlik backend'de
+   yapılır — çünkü tarayıcıdaki JavaScript'e asla güvenilmez, kullanıcı
+   onu değiştirebilir. Backend her isteği tekrar kontrol ediyor.
+   🔎 "never trust the client" */
+export const ROL_MUDUR = 'paytrack-mudur'
+export const ROL_MUHASEBE = 'paytrack-muhasebe'
+export const ROL_GORUNTULEYICI = 'paytrack-goruntuleyici'
+
+export function rolleriAl() {
+  return keycloak.tokenParsed?.realm_access?.roles ?? []
+}
+
+export function yetkiliMi(...roller) {
+  const sahip = rolleriAl()
+  return roller.some((r) => sahip.includes(r))
+}
+
+// Kısayollar
+export const yazabilirMi = () => yetkiliMi(ROL_MUDUR, ROL_MUHASEBE)
+export const yonetebilirMi = () => yetkiliMi(ROL_MUDUR)
+
 // Token'ın süresi dolmadan yenilenmesi için kullanılır (axios araya girerken çağırır)
 export async function tokenAl() {
   try {

@@ -48,6 +48,12 @@ _bearer = HTTPBearer(auto_error=False)
 current_username: ContextVar[str | None] = ContextVar("current_username", default=None)
 
 
+# --- Roller (Keycloak realm rolleri ile birebir aynı isimler) ---
+ROL_MUDUR = "paytrack-mudur"                  # tam yetki
+ROL_MUHASEBE = "paytrack-muhasebe"            # fatura ekle/düzenle/öde
+ROL_GORUNTULEYICI = "paytrack-goruntuleyici"  # salt okunur
+
+
 class User:
     """Token'dan çıkardığımız basit kullanıcı bilgisi."""
 
@@ -55,9 +61,15 @@ class User:
         self.username: str = payload.get("preferred_username", "?")
         self.name: str = payload.get("name") or self.username
         self.email: str | None = payload.get("email")
+        # Keycloak realm rollerini token'ın içinde "realm_access.roles" altında yollar.
+        # Rolleri de imzalı token'dan okuyoruz — yani kullanıcı kendi rolünü uyduramaz.
+        self.roles: set[str] = set(payload.get("realm_access", {}).get("roles", []))
+
+    def has_any(self, *roles: str) -> bool:
+        return bool(self.roles & set(roles))
 
     def __repr__(self) -> str:
-        return f"User({self.username})"
+        return f"User({self.username}, roles={sorted(self.roles)})"
 
 
 def _unauthorized(detail: str) -> HTTPException:
@@ -85,7 +97,11 @@ async def get_current_user(
     if settings.auth_disabled:
         # Geliştirme kolaylığı: .env'de AUTH_DISABLED=true ise doğrulama atlanır.
         # ÜRETİMDE ASLA açık bırakılmaz.
-        return User({"preferred_username": "gelistirme", "name": "Geliştirme Modu"})
+        return User({
+            "preferred_username": "gelistirme",
+            "name": "Geliştirme Modu",
+            "realm_access": {"roles": [ROL_MUDUR]},
+        })
 
     if credentials is None:
         raise _unauthorized("Giriş yapmalısınız")
@@ -125,3 +141,39 @@ async def get_current_user(
     # İşlem geçmişine "kim yaptı" yazılabilsin diye kaydet
     current_username.set(user.username)
     return user
+
+
+# ---------------------------------------------------------------------------
+# YETKİLENDİRME (authorization)
+#
+# Kimlik doğrulama "SEN KİMSİN?" sorusunu cevaplar (yukarısı).
+# Yetkilendirme ise "BUNU YAPABİLİR MİSİN?" sorusunu cevaplar (burası).
+# İkisi FARKLI şeylerdir; sadece giriş kontrolü koymak, herkesin her şeyi
+# yapabilmesi demektir — en sık atlanan güvenlik açığı budur.
+# 🔎 "OWASP API Security Top 10 — Broken Object Level Authorization"
+# ---------------------------------------------------------------------------
+def require_roles(*allowed: str):
+    """
+    Belirtilen rollerden EN AZ BİRİNE sahip olmayı zorunlu kılan bağımlılık üretir.
+
+        @router.delete("/{id}", dependencies=[Depends(yonetim)])
+
+    Not: 401 DEĞİL 403 döner. Aradaki fark:
+      401 = kim olduğunu bilmiyoruz (giriş yap)
+      403 = kim olduğunu biliyoruz ama bu işlem sana kapalı
+    """
+
+    async def _kontrol(user: User = Depends(get_current_user)) -> User:
+        if not user.has_any(*allowed):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bu işlem için yetkiniz yok",
+            )
+        return user
+
+    return _kontrol
+
+
+# Sık kullanılan iki seviye — router'larda bunları kullanıyoruz
+yazma = require_roles(ROL_MUDUR, ROL_MUHASEBE)   # fatura ekle / düzenle / öde / dosya
+yonetim = require_roles(ROL_MUDUR)               # silme, bütçe ve kur yönetimi

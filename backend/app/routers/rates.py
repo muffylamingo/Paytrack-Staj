@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app import crud, schemas
+from app.auth import yonetim
 from app.database import get_db
 
 router = APIRouter(prefix="/rates", tags=["Döviz Kurları"])
@@ -22,7 +23,7 @@ def list_rates(db: Session = Depends(get_db)):
     return crud.list_rates(db)
 
 
-@router.put("/{currency}", response_model=schemas.ExchangeRateOut)
+@router.put("/{currency}", response_model=schemas.ExchangeRateOut, dependencies=[Depends(yonetim)])
 def set_rate(currency: schemas.Currency, data: schemas.ExchangeRateIn, db: Session = Depends(get_db)):
     """Bir para biriminin TL kurunu günceller."""
     if currency == schemas.Currency.try_:

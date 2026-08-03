@@ -11,8 +11,12 @@ export default {
   topbar: {
     welcome: 'Welcome 👋',
     logout: 'Log out',
+    roleMudur: 'Manager',
+    roleMuhasebe: 'Accounting',
+    roleGoruntuleyici: 'Viewer',
   },
   common: {
+    readOnly: 'You have read-only access — changes are disabled.',
     loading: 'Loading…',
     save: 'Save',
     saving: 'Saving…',
@@ -165,6 +169,7 @@ export default {
     rateSaved: '1 {currency} = {rate} ₺ saved',
     rateSaveFailed: 'Could not save the rate',
     dataLoadFailed: 'Could not load data',
+    noPermission: 'You are not authorised for this action',
   },
   calendar: {
     title: 'Payment Calendar',

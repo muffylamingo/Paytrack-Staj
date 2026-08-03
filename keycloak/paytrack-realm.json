@@ -8,6 +8,32 @@
   "defaultLocale": "tr",
   "accessTokenLifespan": 1800,
   "registrationAllowed": false,
+
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "permanentLockout": false,
+  "passwordPolicy": "length(8) and notUsername()",
+  "sslRequired": "external",
+
+  "roles": {
+    "realm": [
+      {
+        "name": "paytrack-mudur",
+        "description": "Tam yetki: silme, bütçe ve kur yönetimi dahil her şey"
+      },
+      {
+        "name": "paytrack-muhasebe",
+        "description": "Fatura oluşturma, düzenleme, ödeme ve dosya ekleme"
+      },
+      {
+        "name": "paytrack-goruntuleyici",
+        "description": "Sadece görüntüleme (salt okunur)"
+      }
+    ]
+  },
+
   "clients": [
     {
       "clientId": "paytrack-frontend",
@@ -34,7 +60,8 @@
       "email": "stajyer@odakent.local",
       "credentials": [
         { "type": "password", "value": "paytrack123", "temporary": false }
-      ]
+      ],
+      "realmRoles": ["paytrack-muhasebe"]
     },
     {
       "username": "mudur",
@@ -45,7 +72,20 @@
       "email": "mudur@odakent.local",
       "credentials": [
         { "type": "password", "value": "paytrack123", "temporary": false }
-      ]
+      ],
+      "realmRoles": ["paytrack-mudur"]
+    },
+    {
+      "username": "izleyici",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Denetim",
+      "lastName": "İzleyici",
+      "email": "izleyici@odakent.local",
+      "credentials": [
+        { "type": "password", "value": "paytrack123", "temporary": false }
+      ],
+      "realmRoles": ["paytrack-goruntuleyici"]
     }
   ]
 }

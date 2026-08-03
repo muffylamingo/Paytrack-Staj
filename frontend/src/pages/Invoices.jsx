@@ -7,6 +7,7 @@ import InvoiceFormModal from '../components/InvoiceFormModal'
 import { useToast } from '../context/ToastContext'
 import { useLang } from '../context/LanguageContext'
 import AttachmentCell from '../components/AttachmentCell'
+import { yazabilirMi } from '../auth/keycloak'
 
 const STATUSES = ['Bekliyor', 'Ödendi', 'Gecikti']
 const CATEGORIES = ['Enerji', 'Yazılım', 'Kira', 'Mutfak']
@@ -26,6 +27,7 @@ export default function Invoices() {
   const fileRef = useRef(null)
   const toast = useToast()
   const { t } = useLang()
+  const yazabilir = yazabilirMi()   // arayüz kısıtı (asıl kontrol backend'de)
 
   async function load() {
     setLoading(true)
@@ -171,7 +173,7 @@ export default function Invoices() {
           />
           <button
             onClick={() => fileRef.current?.click()}
-            disabled={importing}
+            disabled={importing || !yazabilir}
             title={t('invoices.importExcel')}
             className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50 px-4 py-2.5 text-sm font-medium text-bark-700 transition hover:bg-cream-200 disabled:opacity-60"
           >
@@ -186,7 +188,7 @@ export default function Invoices() {
           </button>
           <button
             onClick={handleGenerate}
-            disabled={generating}
+            disabled={generating || !yazabilir}
             title={t('invoices.generateTitle')}
             className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50 px-4 py-2.5 text-sm font-medium text-bark-700 transition hover:bg-cream-200 disabled:opacity-60"
           >
@@ -200,12 +202,20 @@ export default function Invoices() {
           </button>
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-clay-500 px-4 py-2.5 text-sm font-medium text-cream-50 transition hover:bg-clay-600"
+            disabled={!yazabilir}
+            className="flex items-center gap-2 rounded-xl bg-clay-500 px-4 py-2.5 text-sm font-medium text-cream-50 transition hover:bg-clay-600 disabled:opacity-50"
           >
             <Plus size={18} /> {t('invoices.new')}
           </button>
         </div>
       </div>
+
+      {/* Salt okunur kullanıcıya bilgi ver */}
+      {!yazabilir && (
+        <div className="mb-4 rounded-2xl border border-cream-300 bg-cream-100 px-4 py-2.5 text-sm text-bark-600">
+          👁️ {t('common.readOnly')}
+        </div>
+      )}
 
       {/* Filtre çubuğu */}
       <div className="mb-4 flex flex-wrap gap-3">
@@ -318,7 +328,7 @@ export default function Invoices() {
                       <AttachmentCell invoice={inv} onChanged={load} />
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {inv.status !== 'Ödendi' && (
+                      {inv.status !== 'Ödendi' && yazabilir && (
                         <button
                           onClick={() => handlePay(inv.id, inv.vendor_name)}
                           className="inline-flex items-center gap-1 rounded-lg border border-paid-tx/30 px-2.5 py-1 text-xs font-medium text-paid-tx transition hover:bg-paid-bg"

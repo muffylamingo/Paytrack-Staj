@@ -34,12 +34,13 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app import crud, excel_io, models, schemas, storage
+from app.auth import yazma, yonetim
 from app.database import get_db
 
 router = APIRouter(prefix="/invoices", tags=["Faturalar"])
 
 
-@router.post("", response_model=schemas.InvoiceOut, status_code=201)
+@router.post("", response_model=schemas.InvoiceOut, status_code=201, dependencies=[Depends(yazma)])
 def create_invoice(data: schemas.InvoiceCreate, db: Session = Depends(get_db)):
     """Yeni fatura ekler. (201 = Created)"""
     return crud.create_invoice(db, data)
@@ -127,7 +128,7 @@ def import_template():
     )
 
 
-@router.post("/import", response_model=schemas.ImportResult)
+@router.post("/import", response_model=schemas.ImportResult, dependencies=[Depends(yazma)])
 async def import_invoices(
     file: UploadFile = File(..., description="Doldurulmuş .xlsx dosyası"),
     db: Session = Depends(get_db),
@@ -190,7 +191,7 @@ async def import_invoices(
 
 
 # NOT: Bu da /{invoice_id}'den ÖNCE — yol adları id sanılmasın.
-@router.post("/generate-recurring", response_model=schemas.GenerateResult)
+@router.post("/generate-recurring", response_model=schemas.GenerateResult, dependencies=[Depends(yazma)])
 def generate_recurring(db: Session = Depends(get_db)):
     """
     Tekrarlayan faturaların eksik tekrarlarını üretir (bugünden 30 gün ilerisine kadar).
@@ -209,7 +210,7 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
     return invoice
 
 
-@router.put("/{invoice_id}", response_model=schemas.InvoiceOut)
+@router.put("/{invoice_id}", response_model=schemas.InvoiceOut, dependencies=[Depends(yazma)])
 def update_invoice(invoice_id: int, data: schemas.InvoiceUpdate, db: Session = Depends(get_db)):
     """Faturayı günceller (sadece gönderilen alanlar)."""
     invoice = crud.get_invoice(db, invoice_id)
@@ -218,7 +219,7 @@ def update_invoice(invoice_id: int, data: schemas.InvoiceUpdate, db: Session = D
     return crud.update_invoice(db, invoice, data)
 
 
-@router.patch("/{invoice_id}/pay", response_model=schemas.InvoiceOut)
+@router.patch("/{invoice_id}/pay", response_model=schemas.InvoiceOut, dependencies=[Depends(yazma)])
 def pay_invoice(invoice_id: int, db: Session = Depends(get_db)):
     """Faturayı 'Ödendi' olarak işaretler."""
     invoice = crud.get_invoice(db, invoice_id)
@@ -227,7 +228,7 @@ def pay_invoice(invoice_id: int, db: Session = Depends(get_db)):
     return crud.mark_paid(db, invoice)
 
 
-@router.delete("/{invoice_id}", status_code=204)
+@router.delete("/{invoice_id}", status_code=204, dependencies=[Depends(yonetim)])
 def delete_invoice(invoice_id: int, db: Session = Depends(get_db)):
     """Faturayı siler. (204 = No Content)"""
     invoice = crud.get_invoice(db, invoice_id)
@@ -247,7 +248,7 @@ def _get_or_404(db: Session, invoice_id: int) -> models.Invoice:
     return invoice
 
 
-@router.post("/{invoice_id}/attachment", response_model=schemas.InvoiceOut)
+@router.post("/{invoice_id}/attachment", response_model=schemas.InvoiceOut, dependencies=[Depends(yazma)])
 async def upload_attachment(
     invoice_id: int,
     file: UploadFile = File(..., description="PDF/JPG/PNG/WEBP — en fazla 5 MB"),
@@ -279,7 +280,7 @@ def download_attachment(invoice_id: int, db: Session = Depends(get_db)):
     return FileResponse(path, filename=invoice.attachment_name or path.name)
 
 
-@router.delete("/{invoice_id}/attachment", response_model=schemas.InvoiceOut)
+@router.delete("/{invoice_id}/attachment", response_model=schemas.InvoiceOut, dependencies=[Depends(yazma)])
 def remove_attachment(invoice_id: int, db: Session = Depends(get_db)):
     """Faturanın ek dosyasını kaldırır (fatura kalır, sadece dosya silinir)."""
     invoice = _get_or_404(db, invoice_id)
