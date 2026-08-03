@@ -127,6 +127,13 @@ async def get_current_user(
             # Keycloak access token'ında "aud" genelde "account" olur; bizim için
             # anlamlı olan "azp" (yetkili taraf) alanıdır, onu aşağıda kontrol ediyoruz.
             options={"verify_aud": False},
+            # SAAT FARKI TOLERANSI (clock skew) — 30 saniye.
+            # Keycloak ayrı bir makinede/konteynerde çalışıyor ve saatleri birkaç
+            # saniye kayabiliyor. Tolerans olmadan, yeni alınmış bir token
+            # "henüz geçerli değil (iat)" diye reddediliyor ve kullanıcı giriş
+            # yapar yapmaz ilk isteğinde 401 alıyordu. Dağıtık sistemlerde
+            # standart uygulamadır. 🔎 "jwt clock skew leeway"
+            leeway=30,
         )
     except jwt.ExpiredSignatureError as e:
         raise _unauthorized("Oturum süresi doldu, tekrar giriş yapın") from e

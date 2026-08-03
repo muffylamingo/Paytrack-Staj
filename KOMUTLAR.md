@@ -46,10 +46,13 @@ npm run dev
 ### 5) Giriş yap
 Uygulamayı açınca otomatik olarak **Keycloak giriş ekranına** yönlenirsin.
 
-| Kullanıcı | Şifre | Kim |
-|---|---|---|
-| `stajyer` | `paytrack123` | ODAKENT Stajyer |
-| `mudur` | `paytrack123` | Finans Müdürü |
+| Kullanıcı | Şifre | Rol | Yapabildikleri |
+|---|---|---|---|
+| `mudur` | `paytrack123` | Müdür | **Her şey** (silme, bütçe, kur dahil) |
+| `stajyer` | `paytrack123` | Muhasebe | Fatura ekle/düzenle/öde, dosya yükle |
+| `izleyici` | `paytrack123` | Görüntüleyici | **Sadece okuma** |
+
+> 🔒 5 kez yanlış şifre girilirse hesap **1 dakika kilitlenir** (kaba kuvvet koruması).
 
 > Bu kullanıcılar `keycloak/paytrack-realm.json` içinde tanımlı ve Keycloak her açıldığında
 > otomatik kuruluyor. Keycloak yönetim paneli: http://localhost:8080 (`admin` / `admin`)

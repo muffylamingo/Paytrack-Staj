@@ -1050,4 +1050,89 @@ giriş sayfası **Türkçe** ✅ · tema hem aydınlık hem karanlık modda doğ
 
 ---
 
+## 📖 Oturum 18 — Rol Bazlı Yetkilendirme + Güvenlik Sertleştirme 🛡️ ✅
+
+### Neden bu oturum var?
+"Proje bitti mi, gerçek bir şirket kullansa ne eksik?" diye denetim yaptık ve **ciddi bir açık**
+bulduk: giriş sistemi vardı ama **yetkilendirme yoktu.** `stajyer` ile giren biri müdürün
+faturasını silebiliyordu.
+
+### ⭐ En önemli kavram: Authentication ≠ Authorization
+| | Soru | Bizde |
+|---|---|---|
+| **Authentication** (kimlik doğrulama) | "Sen kimsin?" | ✅ Keycloak (Faz 7) |
+| **Authorization** (yetkilendirme) | "Bunu yapabilir misin?" | ❌ yoktu → ✅ bu oturumda eklendi |
+
+> Sadece giriş kontrolü koymak, **giren herkesin her şeyi yapabilmesi** demektir.
+> Bu, OWASP API Security Top 10 listesinin **1 numaralı maddesidir**
+> (*Broken Object Level Authorization*). 🔎 *"OWASP API Security Top 10"*
+
+### Kurduğumuz rol yapısı
+```
+paytrack-mudur          -> tam yetki (silme, bütçe, kur dahil)
+paytrack-muhasebe       -> fatura ekle / düzenle / öde / dosya
+paytrack-goruntuleyici  -> salt okunur
+```
+Kullanıcılar: `mudur`, `stajyer` (muhasebe), `izleyici` (salt okunur).
+
+**Canlı test sonucu:**
+```
+KULLANICI  | Fatura ekle | Ödeme yap | Bütçe değiştir | Fatura sil
+-----------|-------------|-----------|----------------|------------
+mudur      |     201     |    200    |      200       |    204
+stajyer    |     201     |    200    |    403 ✋      |   403 ✋
+izleyici   |   403 ✋    |  403 ✋   |    403 ✋      |   403 ✋
+```
+
+### Çalışman gereken konular
+1. **RBAC (Role-Based Access Control):** Yetkiyi kişiye değil **role** verirsin; kişiye rol atarsın.
+   Yeni çalışan gelince tek tek izin vermezsin, rolü verirsin. 🔎 *"role based access control"*
+2. **401 vs 403 farkı:**
+   - `401 Unauthorized` = kim olduğunu bilmiyorum → **giriş yap**
+   - `403 Forbidden` = kim olduğunu biliyorum ama bu işlem **sana kapalı**
+3. **Bağımlılık üreteci (dependency factory):** `require_roles("a","b")` bir fonksiyon **döndürüyor**;
+   FastAPI onu `Depends()` ile çalıştırıyor. Böylece tek tanımı farklı rollerle tekrar kullandık.
+4. **Roller token'ın içinde gelir** (`realm_access.roles`) ve token **imzalı** olduğu için
+   kullanıcı kendi rolünü uyduramaz.
+5. **"Asla istemciye güvenme":** Arayüzde butonları gizlemek **güvenlik değildir**, sadece nezakettir.
+   Kullanıcı tarayıcı konsolundan isteği elle atabilir. Gerçek kontrol her zaman **backend'de**.
+   🔎 *"never trust the client"*
+
+### 🔒 Keycloak sertleştirme (senin sorduğun "rate limit"in giriş tarafı)
+```
+bruteForceProtected : true    -> 5 hatalı denemede hesap geçici kilitlenir
+failureFactor       : 5
+waitIncrementSeconds: 60      -> her kilitte bekleme süresi artar
+passwordPolicy      : length(8) and notUsername()
+sslRequired         : external
+```
+**Test ettik:** 7 kez yanlış şifre girdik, sonra **doğru** şifreyle denedik → yine reddetti ✅
+> 💡 İnce detay: Keycloak kilitliyken de *"Invalid user credentials"* diyor, *"hesap kilitli"*
+> demiyor. Bu **bilinçlidir** — saldırgana "bu kullanıcı adı doğruymuş" bilgisini vermemek için.
+> 🔎 *"user enumeration attack"*
+
+### 🐞 Bulduğumuz gerçek hata: saat farkı (clock skew)
+`stajyer` ve `izleyici` token'ları **401** alıyordu, `mudur` almıyordu. Sebep:
+```
+"The token is not yet valid (iat)"
+```
+Docker konteynerinin saati host'tan birkaç saniye ileri. Token "gelecekte üretilmiş" görünüp
+reddediliyordu — yani **kullanıcı giriş yapar yapmaz ilk isteğinde 401 alıyordu.**
+
+**Çözüm:** `jwt.decode(..., leeway=30)` — 30 saniyelik saat toleransı. Dağıtık sistemlerde standart.
+🔎 *"jwt clock skew leeway"*, *"NTP time synchronization"*
+
+> 🎓 Ders: Bu hata **rastgele** görünüyordu (bazen çalışıyor, bazen çalışmıyor). Zamanla ilgili
+> hatalar hep böyledir. "Bazen oluyor" diyorsan ilk şüphelenilecek şeylerden biri saat/zaman farkıdır.
+
+### 🎤 Sunumda söyleyebileceğin cümle
+> *"Kimlik doğrulamanın tek başına yetmediğini fark ettim: giriş yapan herkes her şeyi
+> yapabiliyordu. Keycloak'ta üç rol tanımlayıp yetkiyi backend'de rol bazlı kontrol ettim; arayüzdeki
+> kısıtlar yalnızca kullanıcı deneyimi için, gerçek kontrol sunucuda. Ayrıca Keycloak'ın kaba kuvvet
+> korumasını ve şifre politikasını etkinleştirdim. Test sırasında konteyner ile host arasındaki saat
+> farkından kaynaklanan aralıklı bir 401 hatası buldum ve JWT doğrulamasına saat toleransı ekleyerek
+> çözdüm."*
+
+---
+
 <!-- Sonraki oturumların notları buraya eklenecek -->
