@@ -16,7 +16,11 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
     # .env içindeki DATABASE_URL bu alana OTOMATİK okunur.
-    database_url: str
+    # Varsayılan değer docker-compose.yml ile birebir aynı: projeyi ilk kez
+    # klonlayan biri .env oluşturmasa bile uygulama çalışsın (aksi hâlde
+    # anlaşılmaz bir "field required" hatasıyla karşılaşırdı).
+    # Gerçek bir kurulumda bu değer MUTLAKA .env'den gelir.
+    database_url: str = "postgresql+psycopg://paytrack:paytrack@localhost:5432/paytrack"
 
     # --- Keycloak (Faz 7) ---
     keycloak_url: str = "http://localhost:8080"
