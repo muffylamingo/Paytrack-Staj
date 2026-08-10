@@ -309,8 +309,8 @@ stajprje/
 > *(Stitch prompt'ları yine `stitch-prompt.md` dosyasında duruyor — ileride bir ekranı sıfırdan
 > tasarlamak istersek yedek olarak kullanılabilir.)*
 >
-> **GÜNCELLEME (2026-07-28):** Kullanıcı, Purple'ın **mor rengi yerine** krem/toprak tonlu bir
-> **"Organic"** palet istedi (Claude Organic tarzı: krem arka plan, kil/terracotta vurgu `#C2703F`,
+> **GÜNCELLEME (2026-07-28):** Purple'ın **mor rengi yerine** krem/toprak tonlu bir
+> **"Organic"** palet tercih edildi (krem arka plan, kil/terracotta vurgu `#C2703F`,
 > sıcak kahve tonları, **Fraunces** serif başlıklar). **Düzen aynı** (sol menü + kartlar), **renk organik.**
 > Palet `frontend/src/index.css` içindeki `@theme` bloğunda tanımlı.
 
