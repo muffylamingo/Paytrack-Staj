@@ -19,7 +19,7 @@
 ## 📑 İçindekiler
 
 - [Ne yapar?](#-ne-yapar)
-- [Hızlı başlangıç](#-hızlı-başlangıç-4-adım)
+- [Hızlı başlangıç](#-hızlı-başlangıç)
 - [Giriş bilgileri ve roller](#-giriş-bilgileri-ve-roller)
 - [Özellikler](#-özellikler)
 - [Mimari](#️-mimari)
@@ -54,77 +54,87 @@
 
 ---
 
-## 🚀 Hızlı başlangıç (4 adım)
+## 🚀 Hızlı başlangıç
 
-### Gereksinimler
-| Araç | Sürüm |
-|---|---|
-| Docker Desktop | 4.x+ *(çalışır durumda olmalı)* |
-| Python | 3.12+ |
-| Node.js | 20+ |
+### Tek gereksinim: **Docker Desktop** (çalışır durumda)
 
-### 1️⃣ Depoyu klonla
+> Python, Node.js veya PostgreSQL kurmana **gerek yok** — hepsi konteynerlerin içinde.
+
 ```bash
 git clone https://github.com/muffylamingo/Paytrack-Staj.git
 ```
 ```bash
 cd Paytrack-Staj
 ```
+```bash
+docker compose up -d --build
+```
 
-### 2️⃣ Veritabanı + Keycloak'ı başlat
-```bash
-docker compose up -d
-```
-> ⏳ Keycloak ilk açılışta **1–2 dakika** sürebilir. Hazır olduğunu şuradan anlarsın:
-> <http://localhost:8080/realms/paytrack/.well-known/openid-configuration> — JSON dönüyorsa hazır.
+**Hepsi bu.** Bu tek komut şunları yapar:
 
-### 3️⃣ Backend *(yeni terminal — açık bırak)*
+| Sıra | Ne olur |
+|:--:|---|
+| 1 | PostgreSQL açılır ve gerçekten hazır olana kadar beklenir |
+| 2 | Keycloak açılır, realm + kullanıcılar + roller **otomatik kurulur** |
+| 3 | Backend derlenir; **migration'lar** çalışır, **örnek veri** yüklenir |
+| 4 | Frontend derlenir ve nginx ile yayınlanır |
+
+> ⏳ İlk çalıştırma **3–5 dakika** sürer (imajlar indirilip derleniyor).
+> Sonraki açılışlar birkaç saniyedir.
+
+### 🎉 Hazır olunca
+
+| Adres | Ne |
+|---|---|
+| **<http://localhost:5173>** | **Uygulama** ← buradan başla |
+| <http://localhost:8000/docs> | API dokümanı (Swagger) |
+| <http://localhost:8080> | Keycloak yönetim paneli (`admin` / `admin`) |
+
+### Durumu görmek / durdurmak
 ```bash
-cd backend
+docker compose ps
 ```
 ```bash
-python -m venv .venv
+docker compose logs -f backend
 ```
 ```bash
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+docker compose down
+```
+> `docker compose down` verilerini **silmez**. Silmek için `-v` eklenir — dikkat!
+
+<details>
+<summary><b>💻 Geliştirici modu (kod yazarken)</b></summary>
+
+Kodu değiştirip anında görmek istiyorsan konteyner yerine yerel çalıştırmak daha rahattır:
+
+```bash
+docker compose up -d db keycloak
 ```
 ```bash
-.\.venv\Scripts\python.exe -m alembic upgrade head
+cd backend && python -m venv .venv && .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 ```bash
-.\.venv\Scripts\python.exe seed.py
+.\.venv\Scripts\python.exe -m alembic upgrade head && .\.venv\Scripts\python.exe seed.py
 ```
 ```bash
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
-> 📄 API dokümanı: <http://localhost:8000/docs>
->
-> `alembic upgrade head` **tabloları** oluşturur, `seed.py` **örnek veriyi** yükler
-> (13 fatura + 3 bütçe + döviz kurları).
-
-### 4️⃣ Frontend *(başka bir terminal — açık bırak)*
 ```bash
-cd frontend
+cd frontend && npm install && npm run dev
 ```
-```bash
-npm install
-```
-```bash
-npm run dev
-```
-> 🎉 Uygulama: **<http://localhost:5173>** → Keycloak giriş ekranı karşılar.
+</details>
 
 <details>
 <summary><b>❓ Sık karşılaşılan sorunlar</b></summary>
 
 | Belirti | Sebep | Çözüm |
 |---|---|---|
-| `connection refused` (Postgres) | Docker kapalı | Docker Desktop'ı aç → `docker compose up -d` |
+| `Cannot connect to the Docker daemon` | Docker Desktop kapalı | Docker Desktop'ı aç, balina ikonu sabitlensin |
 | Giriş ekranı gelmiyor / beyaz ekran | Keycloak henüz açılmadı | 1–2 dk bekle, sayfayı yenile |
-| `Geçersiz parametre: redirect_uri` | Vite **5174**'te açılmış (5173 dolu) | Eski `node` süreçlerini kapat, tek Vite çalıştır |
-| `address already in use` | Port 8000/5173 dolu | Eski süreci kapat |
-| Ekranlar boş | Örnek veri yüklenmedi | `.\.venv\Scripts\python.exe seed.py` |
-| `relation "invoices" does not exist` | Migration çalıştırılmadı | `alembic upgrade head` |
+| `Invalid username or password` | **Yanlış sayfadasın** | `localhost:8080` Keycloak yönetim panelidir (`admin`/`admin`). Uygulama girişi **localhost:5173** üzerinden |
+| `port is already allocated` | 5173/8000/8080 dolu | Eski süreçleri kapat (`docker compose down`, yerel uvicorn/vite'ı durdur) |
+| Ekranlar boş | Veri yüklenmedi | `docker compose logs backend` — seed satırına bak |
+| Değişiklik görünmüyor | İmaj eski | `docker compose up -d --build` |
 
 </details>
 
@@ -419,7 +429,6 @@ bilinçli olarak tespit edildi ve kapsam dışı bırakıldı:
 |---|---|
 | [PLAN.md](PLAN.md) | Yol haritası, teknoloji gerekçeleri, ekstra özellik tablosu |
 | [ILERLEME.md](ILERLEME.md) | Faz faz ilerleme panosu |
-| [CALISMA-NOTLARI.md](CALISMA-NOTLARI.md) | **Öğrenme notları** — her oturumda ne öğrenildi, hangi hatalar yapıldı ve nasıl çözüldü |
 | [KOMUTLAR.md](KOMUTLAR.md) | Günlük başlatma / durdurma komutları |
 
 ---

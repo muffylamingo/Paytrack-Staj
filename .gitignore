@@ -31,3 +31,6 @@ backend/uploads/
 
 # ---- Diğer ----
 *.log
+
+# ---- Kisisel calisma notlari (GitHub'a GITMEZ, yerelde kalir) ----
+CALISMA-NOTLARI.md

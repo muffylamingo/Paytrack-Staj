@@ -1,0 +1,6 @@
+# Imaja KOPYALANMAYACAK dosyalar
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+.env

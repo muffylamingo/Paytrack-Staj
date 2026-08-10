@@ -1,54 +1,121 @@
 # ============================================================================
-#  PayTrack — PostgreSQL veritabanı (Docker ile)
-#  Bu dosya "docker compose up -d" komutuyla tek tıkta bir PostgreSQL veritabanı
-#  başlatır. Bilgisayarına PostgreSQL kurman gerekmez; her şey bir "container"
-#  (izole kutucuk) içinde çalışır.
+#  PayTrack — TÜM SİSTEM tek komutla
+#
+#      docker compose up -d --build
+#
+#  Bu dosya 4 servisi birden ayağa kaldırır:
+#    db        -> PostgreSQL 16     (veri)
+#    keycloak  -> Kimlik doğrulama  (giriş ekranı, kullanıcılar, roller)
+#    backend   -> FastAPI           (API)   http://localhost:8000/docs
+#    frontend  -> React + nginx     (arayüz) http://localhost:5173
+#
+#  Bilgisayarına Python, Node veya PostgreSQL kurman GEREKMEZ.
 # ============================================================================
 
 services:
-  db:                              # servisin adı (istediğimiz gibi çağırırız)
-    image: postgres:16             # hazır PostgreSQL 16 imajı (Docker internetten indirir)
-    container_name: paytrack_db    # container'ın görünen adı
-    restart: unless-stopped        # bilgisayar yeniden başlarsa DB de otomatik açılsın
-    environment:                   # veritabanı kullanıcı bilgileri (SADECE yerel geliştirme için)
-      POSTGRES_USER: paytrack      # kullanıcı adı
-      POSTGRES_PASSWORD: paytrack  # şifre (yerelde çalıştığı için basit tutuyoruz)
-      POSTGRES_DB: paytrack        # otomatik oluşturulacak veritabanının adı
+  # --------------------------------------------------------------------------
+  #  1) Veritabanı
+  # --------------------------------------------------------------------------
+  db:
+    image: postgres:16
+    container_name: paytrack_db
+    restart: unless-stopped
+    environment:                   # SADECE yerel geliştirme için basit bilgiler
+      POSTGRES_USER: paytrack
+      POSTGRES_PASSWORD: paytrack
+      POSTGRES_DB: paytrack
     ports:
-      - "5432:5432"                # sol=bilgisayarın portu, sağ=container portu. Backend buraya bağlanacak.
+      - "5432:5432"                # sol=bilgisayarın portu, sağ=container portu
     volumes:
-      - paytrack_pgdata:/var/lib/postgresql/data   # veriyi kalıcı sakla (container silinse de kaybolmasın)
+      - paytrack_pgdata:/var/lib/postgresql/data   # veri kalıcı olsun
+    # SAĞLIK KONTROLÜ: "container başladı" ile "veritabanı hazır" aynı şey
+    # değildir. Backend'in boşuna beklememesi için gerçekten hazır olmasını
+    # ölçüyoruz; aşağıda depends_on bunu bekliyor.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paytrack -d paytrack"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
-  # ==========================================================================
-  #  Keycloak — Kullanıcı doğrulama sunucusu (Faz 7 / PDF challenge görevi)
-  #  Giriş ekranını, şifreleri ve oturumları BİZ yazmıyoruz; bu iş için
-  #  tasarlanmış hazır ve güvenli bir sistemi kullanıyoruz.
-  # ==========================================================================
+  # --------------------------------------------------------------------------
+  #  2) Keycloak — kullanıcı doğrulama (Faz 7)
+  #     Giriş ekranını, şifreleri ve oturumları BİZ yazmıyoruz.
+  # --------------------------------------------------------------------------
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     container_name: paytrack_keycloak
     restart: unless-stopped
-    command: start-dev --import-realm    # geliştirme modu + realm'i dosyadan otomatik kur
+    command: start-dev --import-realm    # geliştirme modu + realm'i dosyadan kur
     environment:
-      # Keycloak yönetici paneli girişi (http://localhost:8080)
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_HEALTH_ENABLED: "true"
+      # Token'ın içindeki "issuer" her zaman localhost:8080 olsun.
+      # Tarayıcı Keycloak'a bu adresten gidiyor; backend de token'ı doğrularken
+      # aynı adresi bekliyor. Aksi hâlde "issuer uyuşmuyor" hatası alınır.
+      KC_HOSTNAME: http://localhost:8080
+      KC_HOSTNAME_STRICT: "false"
     ports:
-      - "8080:8080"                      # Keycloak arayüzü (backend 8000, frontend 5173)
+      - "8080:8080"
     volumes:
-      # Realm tanımımız: hangi uygulama, hangi kullanıcılar... Elle kurmaya gerek yok.
+      # Realm tanımı: uygulama, kullanıcılar, roller — elle kurmaya gerek yok
       - ./keycloak/paytrack-realm.json:/opt/keycloak/data/import/paytrack-realm.json:ro
-      # Kendi giriş ekranı temamız (organic palet). Klasörü bağlıyoruz ki
-      # CSS'i değiştirince sadece sayfayı yenilemek yetsin.
+      # Kendi giriş ekranı temamız (organic palet)
       - ./keycloak/themes/paytrack:/opt/keycloak/themes/paytrack:ro
-    # NOT: Keycloak verisi için kalıcı volume KOYMADIK. İki sebep:
-    #   1) Docker'ın oluşturduğu volume 'root' sahipli olduğu için Keycloak
-    #      (root olmayan kullanıcıyla çalışır) içine yazamıyor -> başlatma hatası.
-    #   2) Zaten realm her açılışta paytrack-realm.json'dan kuruluyor; yani
-    #      kullanıcılar ve ayarlar HER ZAMAN aynı = tekrarlanabilir kurulum.
-    # Gerçek bir üretim kurulumunda Keycloak kendi PostgreSQL veritabanını kullanır.
+    # NOT: Keycloak verisi için kalıcı volume KOYMADIK:
+    #   1) Docker'ın oluşturduğu volume 'root' sahipli; Keycloak (root olmayan
+    #      kullanıcı) içine yazamıyor -> başlatma hatası veriyordu.
+    #   2) Realm her açılışta dosyadan kurulduğu için kullanıcılar ve ayarlar
+    #      HER ZAMAN aynı = tekrarlanabilir kurulum.
+    # Gerçek bir üretim kurulumunda Keycloak kendi PostgreSQL'ini kullanır.
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
 
-# Docker'ın veriyi sakladığı "kalıcı disk alanı"
+  # --------------------------------------------------------------------------
+  #  3) Backend — FastAPI
+  #     Açılışta: veritabanını bekler -> migration -> örnek veri -> sunucu
+  # --------------------------------------------------------------------------
+  backend:
+    build: ./backend
+    container_name: paytrack_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy   # veritabanı GERÇEKTEN hazır olana kadar bekle
+    environment:
+      # Konteynerler birbirine SERVİS ADIYLA ulaşır ("localhost" değil —
+      # oradaki localhost konteynerin kendisi olurdu).
+      DATABASE_URL: postgresql+psycopg://paytrack:paytrack@db:5432/paytrack
+      # Token'ın issuer'ı ile aynı olmalı (tarayıcının gördüğü adres)
+      KEYCLOAK_URL: http://localhost:8080
+      # Açık anahtarları (JWKS) indirirken kullanılacak İÇ adres
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080
+      KEYCLOAK_REALM: paytrack
+      KEYCLOAK_CLIENT_ID: paytrack-frontend
+    ports:
+      - "8000:8000"
+    volumes:
+      - paytrack_uploads:/app/uploads   # yüklenen dekontlar kalıcı olsun
+
+  # --------------------------------------------------------------------------
+  #  4) Frontend — React (derlenmiş) + nginx
+  # --------------------------------------------------------------------------
+  frontend:
+    build: ./frontend
+    container_name: paytrack_web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      # Sol taraf 5173: Keycloak'ta izinli adres bu (paytrack-realm.json).
+      # Sağ taraf 80: nginx'in konteyner içindeki portu.
+      - "5173:80"
+
+# Docker'ın veriyi sakladığı kalıcı disk alanları
 volumes:
-  paytrack_pgdata:
+  paytrack_pgdata:     # veritabanı
+  paytrack_uploads:    # fatura ekleri (dekontlar)

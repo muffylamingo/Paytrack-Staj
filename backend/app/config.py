@@ -23,7 +23,16 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://paytrack:paytrack@localhost:5432/paytrack"
 
     # --- Keycloak (Faz 7) ---
+    # DIŞARIDAN görünen adres. Token'ın içindeki "issuer" alanı bununla
+    # birebir aynı olmak zorunda — tarayıcı Keycloak'a bu adresten gittiği için.
     keycloak_url: str = "http://localhost:8080"
+
+    # SUNUCUDAN sunucuya erişim adresi (açık anahtarları/JWKS indirmek için).
+    # Neden ayrı? Docker içinde çalışırken backend "localhost:8080"e ulaşamaz —
+    # oradaki localhost kendi konteyneridir. Servis adını kullanması gerekir
+    # (http://keycloak:8080). Ama token'daki issuer yine "localhost:8080" olur.
+    # Boş bırakılırsa keycloak_url kullanılır (Docker'sız çalışma).
+    keycloak_internal_url: str | None = None
     keycloak_realm: str = "paytrack"
     keycloak_client_id: str = "paytrack-frontend"
     # Geliştirirken doğrulamayı kapatmak için .env'e AUTH_DISABLED=true yazılabilir.

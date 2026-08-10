@@ -1,7 +1,7 @@
 # 📊 PayTrack — İlerleme Panosu
 
 > **Nerede kaldık?** Tek bakışta özet.
-> Detaylı plan → [PLAN.md](PLAN.md) · Çalışılacak konular → [CALISMA-NOTLARI.md](CALISMA-NOTLARI.md) · Komutlar → [KOMUTLAR.md](KOMUTLAR.md)
+> Detaylı plan → [PLAN.md](PLAN.md) · Komutlar → [KOMUTLAR.md](KOMUTLAR.md)
 > Son güncelleme: **2026-08-01**
 
 **Genel ilerleme:** `▓▓▓▓▓▓▓▓▓` &nbsp; **9 / 9 faz tamam — %100** 🎉

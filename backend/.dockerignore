@@ -1,0 +1,8 @@
+# Imaja KOPYALANMAYACAK dosyalar (imaj küçük ve güvenli kalsın)
+.venv/
+__pycache__/
+*.py[cod]
+.env            # sırlar imaja gömülmez, ortam değişkeniyle verilir
+uploads/        # yüklenen dosyalar volume'dan gelir
+*.log
+.pytest_cache/

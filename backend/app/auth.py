@@ -33,8 +33,12 @@ PyJWKError = (_PyJWKError, PyJWKClientError)
 from app.config import settings
 
 # Keycloak adresleri
+# ISSUER: token'ın içinde yazan adres — DIŞ adresle aynı olmalı (tarayıcı oradan gitti)
 ISSUER = f"{settings.keycloak_url}/realms/{settings.keycloak_realm}"
-JWKS_URL = f"{ISSUER}/protocol/openid-connect/certs"
+# JWKS: açık anahtarları biz indiriyoruz — sunucudan erişilebilen adres kullanılır.
+# Docker içinde "localhost" kendi konteynerimiz olduğu için servis adı gerekir.
+_INTERNAL = settings.keycloak_internal_url or settings.keycloak_url
+JWKS_URL = f"{_INTERNAL}/realms/{settings.keycloak_realm}/protocol/openid-connect/certs"
 
 # Açık anahtarları indirip önbellekte tutar (her istekte ağa çıkmaz)
 _jwk_client = PyJWKClient(JWKS_URL, cache_keys=True)
