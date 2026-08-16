@@ -21,6 +21,7 @@ services:
     container_name: paytrack_db
     restart: unless-stopped
     environment:                   # SADECE yerel geliştirme için basit bilgiler
+      TZ: Europe/Istanbul          # backend ile aynı saat dilimi
       POSTGRES_USER: paytrack
       POSTGRES_PASSWORD: paytrack
       POSTGRES_DB: paytrack
@@ -87,6 +88,12 @@ services:
       db:
         condition: service_healthy   # veritabanı GERÇEKTEN hazır olana kadar bekle
     environment:
+      # SAAT DİLİMİ — kritik!
+      # Konteynerler varsayılan olarak UTC çalışır. Türkiye UTC+3 olduğu için
+      # gece 00:00–03:00 arasında backend hâlâ "dün"de kalıyordu: bugün vadeli
+      # bir fatura "bugün ödenecekler" listesine girmiyordu. İş günü hesapları
+      # (bugün vadeli, gecikmiş, bu ay) şirketin saat dilimine göre yapılmalı.
+      TZ: Europe/Istanbul
       # Konteynerler birbirine SERVİS ADIYLA ulaşır ("localhost" değil —
       # oradaki localhost konteynerin kendisi olurdu).
       DATABASE_URL: postgresql+psycopg://paytrack:paytrack@db:5432/paytrack

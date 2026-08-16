@@ -69,6 +69,9 @@ export default {
     generateTitle: 'Kira/abonelik gibi tekrarlayan faturaların yaklaşan dönemlerini oluşturur',
     empty: 'Fatura bulunamadı. “Yeni Fatura” ile ekleyebilirsin.',
     pay: 'Öde',
+    edit: 'Düzenle',
+    delete: 'Sil',
+    deleteConfirm: '{number} numaralı fatura silinecek. Emin misin?',
     columns: {
       number: 'Fatura No',
       vendor: 'Tedarikçi',
@@ -81,6 +84,7 @@ export default {
   },
   form: {
     title: 'Yeni Fatura',
+    editTitle: 'Faturayı Düzenle',
     number: 'Fatura No',
     vendor: 'Tedarikçi',
     category: 'Kategori',
@@ -145,6 +149,9 @@ export default {
   },
   toast: {
     invoiceSaved: '{vendor} faturası kaydedildi',
+    invoiceUpdated: '{vendor} faturası güncellendi',
+    invoiceDeleted: '{number} silindi',
+    invoiceDeleteFailed: 'Fatura silinemedi',
     invoiceSaveFailed: 'Fatura kaydedilemedi',
     paid: '{vendor} ödendi olarak işaretlendi',
     payFailed: 'Ödeme işlenemedi',

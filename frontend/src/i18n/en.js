@@ -69,6 +69,9 @@ export default {
     generateTitle: 'Creates upcoming periods for recurring invoices such as rent or subscriptions',
     empty: 'No invoices found. Add one with “New Invoice”.',
     pay: 'Pay',
+    edit: 'Edit',
+    delete: 'Delete',
+    deleteConfirm: 'Invoice {number} will be deleted. Are you sure?',
     columns: {
       number: 'Invoice No',
       vendor: 'Vendor',
@@ -81,6 +84,7 @@ export default {
   },
   form: {
     title: 'New Invoice',
+    editTitle: 'Edit Invoice',
     number: 'Invoice No',
     vendor: 'Vendor',
     category: 'Category',
@@ -145,6 +149,9 @@ export default {
   },
   toast: {
     invoiceSaved: 'Invoice for {vendor} saved',
+    invoiceUpdated: 'Invoice for {vendor} updated',
+    invoiceDeleted: '{number} deleted',
+    invoiceDeleteFailed: 'Could not delete the invoice',
     invoiceSaveFailed: 'Could not save the invoice',
     paid: '{vendor} marked as paid',
     payFailed: 'Could not process the payment',

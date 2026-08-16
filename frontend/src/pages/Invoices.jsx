@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { Plus, Search, Check, ChevronUp, ChevronDown, ChevronsUpDown, Download, Repeat, Upload, FileDown } from 'lucide-react'
-import { getInvoices, payInvoice, generateRecurring, importInvoices, downloadTemplate, downloadExport } from '../api/invoices'
+import { Plus, Search, Check, ChevronUp, ChevronDown, ChevronsUpDown, Download, Repeat, Upload, FileDown, Pencil, Trash2 } from 'lucide-react'
+import { getInvoices, payInvoice, deleteInvoice, generateRecurring, importInvoices, downloadTemplate, downloadExport } from '../api/invoices'
 import ImportResultModal from '../components/ImportResultModal'
 import { formatCurrency, formatDate, statusBadge, isNearDue } from '../lib/format'
 import InvoiceFormModal from '../components/InvoiceFormModal'
 import { useToast } from '../context/ToastContext'
 import { useLang } from '../context/LanguageContext'
 import AttachmentCell from '../components/AttachmentCell'
-import { yazabilirMi } from '../auth/keycloak'
+import { yazabilirMi, yonetebilirMi } from '../auth/keycloak'
 
 const STATUSES = ['Bekliyor', 'Ödendi', 'Gecikti']
 const CATEGORIES = ['Enerji', 'Yazılım', 'Kira', 'Mutfak']
@@ -21,13 +21,15 @@ export default function Invoices() {
   const [sort, setSort] = useState('due_date')
   const [order, setOrder] = useState('asc')
   const [modalOpen, setModalOpen] = useState(false)
+  const [duzenlenen, setDuzenlenen] = useState(null)   // null = yeni kayıt, dolu = düzenleme
   const [generating, setGenerating] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState(null)
   const fileRef = useRef(null)
   const toast = useToast()
   const { t } = useLang()
-  const yazabilir = yazabilirMi()   // arayüz kısıtı (asıl kontrol backend'de)
+  const yazabilir = yazabilirMi()     // arayüz kısıtı (asıl kontrol backend'de)
+  const yonetebilir = yonetebilirMi() // silme sadece müdür
 
   async function load() {
     setLoading(true)
@@ -59,6 +61,24 @@ export default function Invoices() {
       load()
     } catch {
       toast.error(t('toast.payFailed'))
+    }
+  }
+
+  // CRUD "U" — düzenleme: aynı formu mevcut faturayla açıyoruz
+  function handleEdit(inv) {
+    setDuzenlenen(inv)
+    setModalOpen(true)
+  }
+
+  // CRUD "D" — silme (sadece müdür). Geri alınamaz, o yüzden onay soruyoruz.
+  async function handleDelete(inv) {
+    if (!window.confirm(t('invoices.deleteConfirm', { number: inv.invoice_number }))) return
+    try {
+      await deleteInvoice(inv.id)
+      toast.success(t('toast.invoiceDeleted', { number: inv.invoice_number }))
+      load()
+    } catch {
+      toast.error(t('toast.invoiceDeleteFailed'))
     }
   }
 
@@ -201,7 +221,7 @@ export default function Invoices() {
             <Download size={18} /> {t('invoices.exportExcel')}
           </button>
           <button
-            onClick={() => setModalOpen(true)}
+            onClick={() => { setDuzenlenen(null); setModalOpen(true) }}
             disabled={!yazabilir}
             className="flex items-center gap-2 rounded-xl bg-clay-500 px-4 py-2.5 text-sm font-medium text-cream-50 transition hover:bg-clay-600 disabled:opacity-50"
           >
@@ -327,7 +347,8 @@ export default function Invoices() {
                     <td className="px-4 py-3 text-right">
                       <AttachmentCell invoice={inv} onChanged={load} />
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
                       {inv.status !== 'Ödendi' && yazabilir && (
                         <button
                           onClick={() => handlePay(inv.id, inv.vendor_name)}
@@ -336,6 +357,29 @@ export default function Invoices() {
                           <Check size={14} /> {t('invoices.pay')}
                         </button>
                       )}
+
+                      {/* CRUD "U" — düzenle */}
+                      {yazabilir && (
+                        <button
+                          onClick={() => handleEdit(inv)}
+                          title={t('invoices.edit')}
+                          className="rounded-lg p-1.5 text-bark-400 transition hover:bg-cream-200 hover:text-clay-600"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      )}
+
+                      {/* CRUD "D" — sil (sadece müdür) */}
+                      {yonetebilir && (
+                        <button
+                          onClick={() => handleDelete(inv)}
+                          title={t('invoices.delete')}
+                          className="rounded-lg p-1.5 text-bark-400 transition hover:bg-overdue-bg hover:text-overdue-tx"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                      </div>
                     </td>
                   </tr>
                 )
@@ -346,7 +390,12 @@ export default function Invoices() {
       </div>
 
       {/* Yeni fatura formu */}
-      <InvoiceFormModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={load} />
+      <InvoiceFormModal
+        open={modalOpen}
+        invoice={duzenlenen}
+        onClose={() => { setModalOpen(false); setDuzenlenen(null) }}
+        onSaved={load}
+      />
 
       {/* İçe aktarma sonuç raporu (sadece hatalı satır varsa açılır) */}
       <ImportResultModal result={importResult} onClose={() => setImportResult(null)} />

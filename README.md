@@ -169,6 +169,15 @@ Kullanıcılar `keycloak/paytrack-realm.json` dosyasında tanımlı ve Keycloak 
 
 ## ✨ Özellikler
 
+### CRUD — tam karşılıkları
+
+| Harf | İşlem | API ucu | Arayüzde |
+|:--:|---|---|---|
+| **C** | Create | `POST /invoices` | "Yeni Fatura" butonu |
+| **R** | Read | `GET /invoices` · `GET /invoices/{id}` | Fatura listesi |
+| **U** | Update | `PUT /invoices/{id}` · `PATCH /invoices/{id}/pay` | Kalem ikonu · "Öde" butonu |
+| **D** | Delete | `DELETE /invoices/{id}` | Çöp kutusu ikonu *(sadece müdür)* |
+
 ### PDF'te istenen çekirdek aşamalar
 - [x] **1.** Veritabanı şeması
 - [x] **2.** Backend CRUD (POST / GET / PATCH pay / GET stats)

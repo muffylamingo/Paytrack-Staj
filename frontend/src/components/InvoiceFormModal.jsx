@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
-import { createInvoice } from '../api/invoices'
+import { createInvoice, updateInvoice } from '../api/invoices'
 import { useToast } from '../context/ToastContext'
 import { useLang } from '../context/LanguageContext'
 
@@ -31,13 +31,46 @@ function Field({ label, children, className = '' }) {
   )
 }
 
-// Sağdan açılan "Yeni Fatura" formu (slide-over)
-export default function InvoiceFormModal({ open, onClose, onCreated }) {
+/*
+  Sağdan açılan fatura formu (slide-over).
+
+  TEK BİLEŞEN, İKİ İŞ: `invoice` prop'u
+    - BOŞSA  -> yeni kayıt oluşturur (POST)
+    - DOLUYSA -> mevcut kaydı günceller (PUT)
+  Ayrı bir "düzenleme formu" yazmak yerine aynı formu kullanıyoruz; alanlar
+  zaten birebir aynı. İki dosyayı senkron tutma derdi de olmuyor.
+*/
+export default function InvoiceFormModal({ open, onClose, onSaved, invoice = null }) {
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const toast = useToast()
   const { t } = useLang()
+
+  const duzenleme = Boolean(invoice)   // düzenleme modunda mıyız?
+
+  // Form açıldığında alanları doldur:
+  //   düzenleme -> mevcut faturanın değerleri
+  //   yeni      -> boş form
+  // (Bileşen kapalıyken de bellekte kalıyor; bu yüzden her açılışta sıfırlıyoruz.)
+  useEffect(() => {
+    if (!open) return
+    if (invoice) {
+      setForm({
+        invoice_number: invoice.invoice_number ?? '',
+        vendor_name: invoice.vendor_name ?? '',
+        category: invoice.category ?? 'Enerji',
+        amount: String(invoice.amount ?? ''),
+        currency: invoice.currency ?? 'TRY',
+        due_date: invoice.due_date ?? '',
+        notes: invoice.notes ?? '',
+        recurrence: invoice.recurrence ?? '',
+      })
+    } else {
+      setForm(EMPTY)
+    }
+    setError('')
+  }, [open, invoice])
 
   if (!open) return null
 
@@ -48,16 +81,24 @@ export default function InvoiceFormModal({ open, onClose, onCreated }) {
     setSaving(true)
     setError('')
     try {
-      await createInvoice({
+      const gonderilecek = {
         ...form,
         amount: Number(form.amount),
         // Boş metin yerine null gönder — backend "tekrarlamaz" diye anlasın
         // (boş string geçerli bir Recurrence değeri değil, 422 hatası verirdi)
         recurrence: form.recurrence || null,
-      })
-      toast.success(t('toast.invoiceSaved', { vendor: form.vendor_name }))
-      setForm(EMPTY)
-      onCreated() // listeyi yenile
+      }
+
+      if (duzenleme) {
+        await updateInvoice(invoice.id, gonderilecek)
+        toast.success(t('toast.invoiceUpdated', { vendor: form.vendor_name }))
+      } else {
+        await createInvoice(gonderilecek)
+        toast.success(t('toast.invoiceSaved', { vendor: form.vendor_name }))
+        setForm(EMPTY)
+      }
+
+      onSaved()   // listeyi yenile
       onClose()
     } catch {
       // Hem form içinde hem toast olarak göster (kullanıcı ikisini de kaçırmasın)
@@ -78,7 +119,9 @@ export default function InvoiceFormModal({ open, onClose, onCreated }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="font-serif text-2xl font-semibold text-bark-900">{t('form.title')}</h2>
+          <h2 className="font-serif text-2xl font-semibold text-bark-900">
+            {duzenleme ? t('form.editTitle') : t('form.title')}
+          </h2>
           <button onClick={onClose} className="rounded-lg p-1 text-bark-400 hover:bg-cream-200">
             <X size={20} />
           </button>

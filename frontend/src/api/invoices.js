@@ -12,6 +12,14 @@ export async function createInvoice(payload) {
   return data
 }
 
+// Faturayı GÜNCELLE (CRUD'un "U" harfi).
+// PUT kullanıyoruz: kaydın tamamını gönderip yerine koyuyoruz.
+// (PATCH ise "sadece şu alanı değiştir" demektir — ödeme işaretlemede onu kullandık.)
+export async function updateInvoice(id, payload) {
+  const { data } = await api.put(`/invoices/${id}`, payload)
+  return data
+}
+
 // Faturayı "Ödendi" işaretle
 export async function payInvoice(id) {
   const { data } = await api.patch(`/invoices/${id}/pay`)
